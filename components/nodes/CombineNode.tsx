@@ -1,8 +1,10 @@
 "use client";
 
-import { Handle, Position, NodeResizer, NodeToolbar, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, NodeResizer, NodeToolbar, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useEffect, useMemo } from "react";
+import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
+import { LabeledHandle } from "@/components/labeled-handle";
 
 export default function CombineNode({ data }: NodeProps) {
   const nodeId = useNodeId();
@@ -55,7 +57,7 @@ export default function CombineNode({ data }: NodeProps) {
   const hasImage = Boolean(inputs.images.find(Boolean));
 
   return (
-    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-56">
+    <BaseNode className="min-w-56">
       <NodeResizer minWidth={224} minHeight={120} handleClassName="border border-black/20 dark:border-white/20" />
       <NodeToolbar isVisible={useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected)} position="top" align="center">
         <button
@@ -68,32 +70,39 @@ export default function CombineNode({ data }: NodeProps) {
           Remove
         </button>
       </NodeToolbar>
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
-        <div className="font-medium">Combine</div>
-        <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
-          onClick={() => {
-            if (!nodeId) return;
-            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
-          }}
-          aria-label="Remove node"
-        >
-          ×
-        </button>
-      </div>
-      {/* IO Section */}
+      <BaseNodeHeader className="border-b">
+        <BaseNodeHeaderTitle>Combine</BaseNodeHeaderTitle>
+      </BaseNodeHeader>
       <div className="relative h-16">
-        <div className="absolute left-[-6px] top-[12px] -translate-y-1/2 text-[10px] text-gray-500 select-none">string</div>
-        <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 12 }} />
-        <div className="absolute left-[-6px] top-[36px] -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
-        <Handle id={makeHandleId("in", "image")} type="target" position={Position.Left} style={{ top: 36 }} />
-        <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">combined</div>
-        <Handle id={makeHandleId("out", "combined")} type="source" position={Position.Right} />
+        <LabeledHandle
+          id={makeHandleId("in", "string")}
+          type="target"
+          position={Position.Left}
+          title="string"
+          className="absolute left-[-6px] top-[12px] -translate-y-1/2"
+          labelClassName="text-[10px] text-foreground/70"
+        />
+        <LabeledHandle
+          id={makeHandleId("in", "image")}
+          type="target"
+          position={Position.Left}
+          title="image"
+          className="absolute left-[-6px] top-[36px] -translate-y-1/2"
+          labelClassName="text-[10px] text-foreground/70"
+        />
+        <LabeledHandle
+          id={makeHandleId("out", "combined")}
+          type="source"
+          position={Position.Right}
+          title="combined"
+          className="absolute right-[-6px] top-1/2 -translate-y-1/2"
+          labelClassName="text-[10px] text-foreground/70"
+        />
         <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
       </div>
-      {/* Content */}
-      <div className="p-3 text-xs text-gray-500">Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}</div>
-    </div>
+      <BaseNodeContent className="text-xs text-muted-foreground">
+        Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}
+      </BaseNodeContent>
+    </BaseNode>
   );
 }

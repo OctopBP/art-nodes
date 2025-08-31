@@ -1,7 +1,9 @@
 "use client";
 
-import { Handle, Position, NodeToolbar, NodeResizer, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, NodeToolbar, NodeResizer, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
+import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle, BaseNodeContent } from "@/components/base-node";
+import { LabeledHandle } from "@/components/labeled-handle";
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
   const canvas = document.createElement("canvas");
@@ -68,11 +70,11 @@ export default function ImageNode({ data }: NodeProps) {
   const error: string | undefined = (data as any)?.error;
 
   return (
-    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-64">
+    <BaseNode className="min-w-64">
       <NodeResizer minWidth={256} minHeight={200} handleClassName="border border-black/20 dark:border-white/20" />
       <NodeToolbar isVisible={selected} position="top" align="center">
         <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg:black/60 hover:bg-black/5 dark:hover:bg-white/10"
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
           onClick={() => {
             if (!nodeId) return;
             setNodes((ns) => ns.filter((n) => n.id !== nodeId));
@@ -81,17 +83,22 @@ export default function ImageNode({ data }: NodeProps) {
           Remove
         </button>
       </NodeToolbar>
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
-        <div className="font-medium">Image</div>
-      </div>
-      {/* IO Row */}
+      <BaseNodeHeader className="border-b">
+        <BaseNodeHeaderTitle>Image</BaseNodeHeaderTitle>
+      </BaseNodeHeader>
       <div className="relative h-10 px-3 grid items-center">
-        <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
-        <Handle id={makeHandleId("out", "image")} type="source" position={Position.Right} />
+        <LabeledHandle
+          id={makeHandleId("out", "image")}
+          type="source"
+          position={Position.Right}
+          title="image"
+          className="absolute right-[-6px] top-1/2 -translate-y-1/2"
+          labelClassName="text-[10px] text-foreground/70"
+        />
         <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
       </div>
 
-      <div className="p-3 space-y-2">
+      <BaseNodeContent className="space-y-2">
         <label className="block text-xs text-gray-500">Upload file</label>
         <input
           className="nodrag nopan block w-full text-xs"
@@ -156,7 +163,7 @@ export default function ImageNode({ data }: NodeProps) {
         ) : (
           <div className="text-xs text-gray-500">No image selected</div>
         )}
-      </div>
-    </div>
+      </BaseNodeContent>
+    </BaseNode>
   );
 }
