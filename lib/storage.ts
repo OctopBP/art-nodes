@@ -1,13 +1,13 @@
-import { createStore, del, entries, get, keys, set } from "idb-keyval";
+import { createStore, del, entries, get, set } from "idb-keyval";
 import { ZDocument, type DocumentT } from "@/lib/schemas";
 import type { StateStorage } from "zustand/middleware";
 
-const dbName = "artnodes" as const;
-
 export const stores = {
-  documents: createStore(dbName, "documents"),
-  settings: createStore(dbName, "settings"),
-  thumbnails: createStore(dbName, "thumbnails"),
+  // Use separate DBs to avoid missing object stores when opening the same DB name
+  // with different store names at version 1.
+  documents: createStore("artnodes-documents", "documents"),
+  settings: createStore("artnodes-settings", "settings"),
+  thumbnails: createStore("artnodes-thumbnails", "thumbnails"),
 } as const;
 
 // Documents API
@@ -69,4 +69,3 @@ export function createIdbStateStorage(storeName: keyof typeof stores, keyOverrid
     },
   };
 }
-
