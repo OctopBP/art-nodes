@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeToolbar, NodeResizer, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
@@ -29,6 +29,7 @@ async function urlToPngDataUrl(url: string): Promise<string> {
 export default function ImageNode({ data }: NodeProps) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
+  const selected = useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected);
 
   const setImage = (imageDataUrl?: string, filename?: string, error?: string) => {
     if (!nodeId) return;
@@ -68,18 +69,20 @@ export default function ImageNode({ data }: NodeProps) {
 
   return (
     <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-64">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
-        <div className="font-medium">Image</div>
+      <NodeResizer minWidth={256} minHeight={200} handleClassName="border border-black/20 dark:border-white/20" />
+      <NodeToolbar isVisible={selected} position="top" align="center">
         <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg:black/60 hover:bg-black/5 dark:hover:bg-white/10"
           onClick={() => {
             if (!nodeId) return;
             setNodes((ns) => ns.filter((n) => n.id !== nodeId));
           }}
-          aria-label="Remove node"
         >
-          ×
+          Remove
         </button>
+      </NodeToolbar>
+      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
+        <div className="font-medium">Image</div>
       </div>
       {/* IO Row */}
       <div className="relative h-10 px-3 grid items-center">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Handle, Position, NodeResizer, NodeToolbar, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useMemo, useState } from "react";
 import { useSettingsStore } from "@/store/settings";
@@ -44,19 +44,21 @@ export default function GenerateNode({ data }: NodeProps) {
 
   return (
     <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-64">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
-        <div className="font-medium">Generate</div>
+      <NodeResizer minWidth={256} minHeight={220} handleClassName="border border-black/20 dark:border-white/20" />
+      <NodeToolbar isVisible={useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected)} position="top" align="center">
         <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
           onClick={() => {
             if (!nodeId) return;
             setNodes((ns) => ns.filter((n) => n.id !== nodeId));
           }}
-          aria-label="Remove node"
         >
-          ×
+          Remove
         </button>
+      </NodeToolbar>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
+        <div className="font-medium">Generate</div>
       </div>
       {/* IO Section */}
       <div className="relative h-16">

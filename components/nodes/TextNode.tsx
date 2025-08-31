@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
+import { Handle, Position, NodeToolbar, NodeResizer, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 
 export default function TextNode({ data }: NodeProps) {
@@ -13,22 +13,25 @@ export default function TextNode({ data }: NodeProps) {
       nodes.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, text: value } } : n))
     );
   };
+  const selected = useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected);
 
   return (
     <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-56">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
-        <div className="font-medium">Text</div>
+      <NodeResizer minWidth={224} minHeight={140} handleClassName="border border-black/20 dark:border-white/20" />
+      <NodeToolbar isVisible={selected} position="top" align="center">
         <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
           onClick={() => {
             if (!nodeId) return;
             setNodes((ns) => ns.filter((n) => n.id !== nodeId));
           }}
-          aria-label="Remove node"
         >
-          ×
+          Remove
         </button>
+      </NodeToolbar>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
+        <div className="font-medium">Text</div>
       </div>
       {/* IO Row */}
       <div className="relative h-10 px-3 grid items-center">
