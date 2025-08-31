@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import NavBar from "@/components/NavBar";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -31,14 +32,7 @@ export default function RootLayout({
             <Link href="/documents" className="font-semibold tracking-tight">
               Art Nodes
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <Link href="/documents" className="hover:underline">
-                Documents
-              </Link>
-              <Link href="/settings" className="hover:underline">
-                Settings
-              </Link>
-            </nav>
+            <NavBar />
           </div>
         </header>
         <div className="max-w-6xl mx-auto w-full px-6 py-6">{children}</div>
