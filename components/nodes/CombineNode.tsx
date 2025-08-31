@@ -40,13 +40,15 @@ export default function CombineNode({ data }: NodeProps) {
 
   useEffect(() => {
     if (!nodeId) return;
-    const combinedText = inputs.strings.join("\n");
-    const firstImage = inputs.images.find(Boolean);
+    const text = inputs.strings.length ? inputs.strings.join("\n") : undefined;
+    const imageDataUrl = inputs.images.find(Boolean) || undefined;
     const prevCombined = (data as any)?.combined as { text?: string; imageDataUrl?: string } | undefined;
-    if (prevCombined?.text === combinedText && prevCombined?.imageDataUrl === firstImage) return;
-    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, combined: { text: combinedText || undefined, imageDataUrl: firstImage } } } : n)));
+    const nextCombined = { text, imageDataUrl };
+    const equal = prevCombined?.text === nextCombined.text && prevCombined?.imageDataUrl === nextCombined.imageDataUrl;
+    if (equal) return;
+    setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, combined: nextCombined } } : n)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputs.strings, inputs.images, nodeId, setNodes]);
+  }, [inputs.strings.join("\n"), inputs.images.join(","), nodeId, setNodes]);
 
   const stringsCount = inputs.strings.length;
   const hasImage = Boolean(inputs.images.find(Boolean));
