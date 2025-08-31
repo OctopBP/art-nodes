@@ -1,13 +1,8 @@
-type Props = {
-  params: Promise<{ id: string }>;
-};
+type Props = { params: Promise<{ id: string }> };
+
+import EditorClient from "./client";
 
 export default async function DocumentEditorPage({ params }: Props) {
   const { id } = await params;
-  return (
-    <main className="min-h-screen p-8">
-      <h1 className="text-2xl font-semibold">Document Editor</h1>
-      <p className="text-sm text-gray-500 mt-2">Editing document: {id}</p>
-    </main>
-  );
+  return <EditorClient id={id} />;
 }
