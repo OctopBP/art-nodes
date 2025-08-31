@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { makeHandleId } from "@/lib/ports";
 import { useMemo, useState } from "react";
 import { useSettingsStore } from "@/store/settings";
 import { generateImage } from "@/lib/genai";
@@ -97,9 +98,9 @@ export default function GenerateNode({ data }: NodeProps) {
         )}
       </div>
 
-      <Handle id="in:string" type="target" position={Position.Left} style={{ top: 24 }} />
-      <Handle id="in:combined" type="target" position={Position.Left} style={{ top: 48 }} />
-      <Handle id="out:image" type="source" position={Position.Right} />
+      <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 24 }} />
+      <Handle id={makeHandleId("in", "combined")} type="target" position={Position.Left} style={{ top: 48 }} />
+      <Handle id={makeHandleId("out", "image")} type="source" position={Position.Right} />
     </div>
   );
 }

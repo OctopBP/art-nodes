@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { makeHandleId } from "@/lib/ports";
 import { useEffect, useMemo } from "react";
 
 export default function CombineNode({ data }: NodeProps) {
@@ -57,9 +58,9 @@ export default function CombineNode({ data }: NodeProps) {
     <div className="rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-56">
       <div className="font-medium mb-2">Combine</div>
       <div className="text-xs text-gray-500">Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}</div>
-      <Handle id="in:string" type="target" position={Position.Left} style={{ top: 24 }} />
-      <Handle id="in:image" type="target" position={Position.Left} style={{ top: 48 }} />
-      <Handle id="out:combined" type="source" position={Position.Right} />
+      <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 24 }} />
+      <Handle id={makeHandleId("in", "image")} type="target" position={Position.Left} style={{ top: 48 }} />
+      <Handle id={makeHandleId("out", "combined")} type="source" position={Position.Right} />
     </div>
   );
 }

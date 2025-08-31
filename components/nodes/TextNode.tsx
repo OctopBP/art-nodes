@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
+import { makeHandleId } from "@/lib/ports";
 
 export default function TextNode({ data }: NodeProps) {
   const nodeId = useNodeId();
@@ -23,7 +24,7 @@ export default function TextNode({ data }: NodeProps) {
         value={(data as any)?.text ?? ""}
         onChange={(e) => onChange(e.target.value)}
       />
-      <Handle id="out:string" type="source" position={Position.Right} />
+      <Handle id={makeHandleId("out", "string")} type="source" position={Position.Right} />
     </div>
   );
 }

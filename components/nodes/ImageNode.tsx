@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
+import { makeHandleId } from "@/lib/ports";
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
   const canvas = document.createElement("canvas");
@@ -136,7 +137,7 @@ export default function ImageNode({ data }: NodeProps) {
         )}
       </div>
 
-      <Handle id="out:image" type="source" position={Position.Right} />
+      <Handle id={makeHandleId("out", "image")} type="source" position={Position.Right} />
     </div>
   );
 }

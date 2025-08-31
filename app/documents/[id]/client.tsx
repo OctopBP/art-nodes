@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDocumentsStore } from "@/store/documents";
 import type { DocumentT } from "@/lib/schemas";
 import Canvas from "@/components/flow/Canvas";
-import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
+import type { Edge as RFEdge, Node as RFNode, Connection } from "@xyflow/react";
 import { useCallback } from "react";
 import TextNode from "@/components/nodes/TextNode";
 import ImageNode from "@/components/nodes/ImageNode";
@@ -13,6 +13,7 @@ import CombineNode from "@/components/nodes/CombineNode";
 import GenerateNode from "@/components/nodes/GenerateNode";
 import { nanoid } from "nanoid";
 import type { NodeData } from "@/lib/schemas";
+import { isValidConnectionByHandles } from "@/lib/ports";
 
 type FlowNode = RFNode<NodeData>;
 type FlowEdge = RFEdge;
@@ -65,16 +66,8 @@ export default function EditorClient({ id }: { id: string }) {
   }, []);
 
   // Keep hooks before any conditional returns
-  const isValidConnection = useCallback((conn: { sourceHandle?: string | null; targetHandle?: string | null }) => {
-    const sh = conn.sourceHandle ?? "";
-    const th = conn.targetHandle ?? "";
-    const sType = sh.split(":")[1];
-    const tType = th.split(":")[1];
-    if (!sType || !tType) return true; // allow by default if unspecified
-    if (sType === "string" && tType === "string") return true;
-    if (sType === "image" && tType === "image") return true;
-    if (sType === "combined" && tType === "combined") return true;
-    return false;
+  const isValidConnection = useCallback((conn: Connection) => {
+    return isValidConnectionByHandles(conn);
   }, []);
 
   if (loading) {
