@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDocumentsStore } from "@/store/documents";
 import type { DocumentT } from "@/lib/schemas";
+import Canvas from "@/components/flow/Canvas";
 
 export default function EditorClient({ id }: { id: string }) {
   const { get, save } = useDocumentsStore();
@@ -101,8 +102,9 @@ export default function EditorClient({ id }: { id: string }) {
         </aside>
         <section className="relative">
           <div className="absolute inset-0">
-            <div className="w-full h-full grid place-items-center text-gray-500">
-              Canvas placeholder (Flow will mount here)
+            <div className="w-full h-full">
+              {/* Empty canvas for now; data wiring comes later */}
+              <Canvas />
             </div>
           </div>
         </section>
@@ -110,4 +112,3 @@ export default function EditorClient({ id }: { id: string }) {
     </main>
   );
 }
-
