@@ -34,6 +34,7 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes }: 
   const onChangeRef = useRef(onChange);
   const nodesRef = useRef<Node[]>(rfNodes);
   const edgesRef = useRef<Edge[]>(rfEdges);
+  const shouldEmitRef = useRef(false);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -55,35 +56,37 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes }: 
     setRfEdges(edges);
   }, [edges, setRfEdges]);
 
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      setRfNodes((prev) => {
-        const next = applyNodeChanges(changes, prev);
-        onChangeRef.current?.(next, edgesRef.current);
-        return next;
-      });
-    },
-    [setRfNodes]
-  );
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setRfNodes((prev) => {
+      const next = applyNodeChanges(changes, prev);
+      shouldEmitRef.current = true;
+      return next;
+    });
+  }, [setRfNodes]);
 
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      setRfEdges((prev) => {
-        const next = applyEdgeChanges(changes, prev);
-        onChangeRef.current?.(nodesRef.current, next);
-        return next;
-      });
-    },
-    [setRfEdges]
-  );
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setRfEdges((prev) => {
+      const next = applyEdgeChanges(changes, prev);
+      shouldEmitRef.current = true;
+      return next;
+    });
+  }, [setRfEdges]);
 
   const onConnect = useCallback((connection: Connection) => {
     setRfEdges((eds) => {
       const next = addEdge(connection, eds);
-      onChangeRef.current?.(nodesRef.current, next);
+      shouldEmitRef.current = true;
       return next;
     });
   }, []);
+
+  // Emit external change only after internal state updates commit
+  useEffect(() => {
+    if (shouldEmitRef.current) {
+      shouldEmitRef.current = false;
+      onChangeRef.current?.(rfNodes, rfEdges);
+    }
+  }, [rfNodes, rfEdges]);
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
