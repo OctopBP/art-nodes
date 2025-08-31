@@ -55,8 +55,9 @@ export default function CombineNode({ data }: NodeProps) {
   const hasImage = Boolean(inputs.images.find(Boolean));
 
   return (
-    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-56">
-      <div className="flex items-center justify-between mb-2">
+    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur text-sm min-w-56">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-black/10 dark:border-white/10">
         <div className="font-medium">Combine</div>
         <button
           className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
@@ -69,13 +70,18 @@ export default function CombineNode({ data }: NodeProps) {
           ×
         </button>
       </div>
-      <div className="text-xs text-gray-500">Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}</div>
-      <div className="absolute left-[-6px] top-[24px] -translate-y-1/2 text-[10px] text-gray-500 select-none">string</div>
-      <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 24 }} />
-      <div className="absolute left-[-6px] top-[48px] -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
-      <Handle id={makeHandleId("in", "image")} type="target" position={Position.Left} style={{ top: 48 }} />
-      <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">combined</div>
-      <Handle id={makeHandleId("out", "combined")} type="source" position={Position.Right} />
+      {/* IO Section */}
+      <div className="relative h-16">
+        <div className="absolute left-[-6px] top-[12px] -translate-y-1/2 text-[10px] text-gray-500 select-none">string</div>
+        <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 12 }} />
+        <div className="absolute left-[-6px] top-[36px] -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
+        <Handle id={makeHandleId("in", "image")} type="target" position={Position.Left} style={{ top: 36 }} />
+        <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">combined</div>
+        <Handle id={makeHandleId("out", "combined")} type="source" position={Position.Right} />
+        <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
+      </div>
+      {/* Content */}
+      <div className="p-3 text-xs text-gray-500">Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}</div>
     </div>
   );
 }
