@@ -23,9 +23,10 @@ type CanvasProps = {
   nodes?: Node[];
   edges?: Edge[];
   onChange?: (nodes: Node[], edges: Edge[]) => void;
+  nodeTypes?: Record<string, React.ComponentType<any>>;
 };
 
-export default function Canvas({ nodes = [], edges = [], onChange }: CanvasProps) {
+export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes }: CanvasProps) {
   const [rfNodes, setRfNodes] = useNodesState(nodes);
   const [rfEdges, setRfEdges] = useEdgesState(edges);
 
@@ -86,7 +87,15 @@ export default function Canvas({ nodes = [], edges = [], onChange }: CanvasProps
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
-      <ReactFlow nodes={rfNodes} edges={rfEdges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} fitView>
+      <ReactFlow
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        fitView
+        nodeTypes={nodeTypes}
+      >
         <Background variant="dots" gap={16} size={1} />
         <MiniMap pannable zoomable />
         <Controls position="bottom-left" />

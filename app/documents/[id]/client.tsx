@@ -7,6 +7,11 @@ import type { DocumentT } from "@/lib/schemas";
 import Canvas from "@/components/flow/Canvas";
 import type { Edge, Node } from "@xyflow/react";
 import { useCallback } from "react";
+import TextNode from "@/components/nodes/TextNode";
+import ImageNode from "@/components/nodes/ImageNode";
+import CombineNode from "@/components/nodes/CombineNode";
+import GenerateNode from "@/components/nodes/GenerateNode";
+import { nanoid } from "nanoid";
 
 export default function EditorClient({ id }: { id: string }) {
   const { get, save } = useDocumentsStore();
@@ -78,6 +83,36 @@ export default function EditorClient({ id }: { id: string }) {
 
   if (!doc) return null;
 
+  const nodeTypes = {
+    text: TextNode,
+    image: ImageNode,
+    combine: CombineNode,
+    generate: GenerateNode,
+  } as const;
+
+  const addNode = (type: keyof typeof nodeTypes) => {
+    const id = nanoid(8);
+    const position = { x: 200 + doc.nodes.length * 40, y: 120 + doc.nodes.length * 20 };
+    let data: any;
+    switch (type) {
+      case "text":
+        data = { kind: "text", text: "" };
+        break;
+      case "image":
+        data = { kind: "image" };
+        break;
+      case "combine":
+        data = { kind: "combine" };
+        break;
+      case "generate":
+        data = { kind: "generate", status: "idle" };
+        break;
+    }
+    const node: Node = { id, type, position, data } as unknown as Node;
+    setDoc({ ...doc, nodes: [...doc.nodes, node as any] });
+    setDirty(true);
+  };
+
   return (
     <main className="min-h-screen p-0">
       <div className="border-b border-black/10 dark:border-white/10 px-6 py-3 flex items-center justify-between">
@@ -101,12 +136,20 @@ export default function EditorClient({ id }: { id: string }) {
       <div className="h-[calc(100vh-56px)] grid grid-cols-[240px_1fr]">
         <aside className="border-r border-black/10 dark:border-white/10 p-4">
           <div className="text-sm font-medium mb-2">Toolbar</div>
-          <ul className="text-sm space-y-2 text-gray-700 dark:text-gray-300">
-            <li>+ Text Node</li>
-            <li>+ Image Node</li>
-            <li>+ Combine Node</li>
-            <li>+ Generate Node</li>
-          </ul>
+          <div className="text-sm space-y-2 text-gray-700 dark:text-gray-300">
+            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("text")}>
+              + Text Node
+            </button>
+            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("image")}>
+              + Image Node
+            </button>
+            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("combine")}>
+              + Combine Node
+            </button>
+            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("generate")}>
+              + Generate Node
+            </button>
+          </div>
         </aside>
         <section className="relative">
           <div className="absolute inset-0">
@@ -115,6 +158,7 @@ export default function EditorClient({ id }: { id: string }) {
                 nodes={doc.nodes as unknown as Node[]}
                 edges={doc.edges as unknown as Edge[]}
                 onChange={handleCanvasChange}
+                nodeTypes={nodeTypes as any}
               />
             </div>
           </div>
