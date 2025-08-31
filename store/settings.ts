@@ -14,7 +14,7 @@ type SettingsState = {
 
 const initial: Pick<SettingsState, "apiKey" | "model"> = {
   apiKey: "",
-  model: "",
+  model: "imagen-3.0",
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -33,4 +33,3 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 );
-

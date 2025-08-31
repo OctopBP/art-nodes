@@ -9,6 +9,12 @@ export default function SettingsPage() {
   const setApiKey = useSettingsStore((s) => s.setApiKey);
   const setModel = useSettingsStore((s) => s.setModel);
   const [showKey, setShowKey] = useState(false);
+  const MODEL_OPTIONS = [
+    { value: "imagen-3.0", label: "Imagen 3.0 (default)" },
+    { value: "imagen-3.0-fast", label: "Imagen 3.0 Fast" },
+    { value: "imagen-3.0-large", label: "Imagen 3.0 Large" },
+    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  ];
 
   return (
     <main className="min-h-screen p-8">
@@ -47,14 +53,19 @@ export default function SettingsPage() {
           <label htmlFor="model" className="block text-sm font-medium mb-1">
             Default Model
           </label>
-          <input
+          <select
             id="model"
-            type="text"
             value={model}
             onChange={(e) => setModel(e.target.value)}
             className="w-full rounded-md border border-black/10 dark:border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
-            placeholder="e.g., image generation model name"
-          />
+          >
+            {MODEL_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value} className="bg-white dark:bg-black">
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">Select a model for image generation.</p>
         </div>
 
         <div className="text-xs text-gray-500">Changes save automatically.</div>
