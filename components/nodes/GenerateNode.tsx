@@ -43,8 +43,20 @@ export default function GenerateNode({ data }: NodeProps) {
   const ready = Boolean(inputs.text) || Boolean(inputs.combined?.text);
 
   return (
-    <div className="rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-64">
-      <div className="font-medium mb-2">Generate</div>
+    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-64">
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-medium">Generate</div>
+        <button
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          onClick={() => {
+            if (!nodeId) return;
+            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+          }}
+          aria-label="Remove node"
+        >
+          ×
+        </button>
+      </div>
       <div className="space-y-2">
         <button
           className="rounded-md border border-black/10 dark:border-white/10 px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/5 dark:hover:bg-white/5"
@@ -98,8 +110,11 @@ export default function GenerateNode({ data }: NodeProps) {
         )}
       </div>
 
+      <div className="absolute left-[-6px] top-[24px] -translate-y-1/2 text-[10px] text-gray-500 select-none">string</div>
       <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 24 }} />
+      <div className="absolute left-[-6px] top-[48px] -translate-y-1/2 text-[10px] text-gray-500 select-none">combined</div>
       <Handle id={makeHandleId("in", "combined")} type="target" position={Position.Left} style={{ top: 48 }} />
+      <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
       <Handle id={makeHandleId("out", "image")} type="source" position={Position.Right} />
     </div>
   );

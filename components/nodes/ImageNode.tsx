@@ -67,8 +67,20 @@ export default function ImageNode({ data }: NodeProps) {
   const error: string | undefined = (data as any)?.error;
 
   return (
-    <div className="rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-64">
-      <div className="font-medium mb-2">Image</div>
+    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-64">
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-medium">Image</div>
+        <button
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          onClick={() => {
+            if (!nodeId) return;
+            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+          }}
+          aria-label="Remove node"
+        >
+          ×
+        </button>
+      </div>
 
       <div className="space-y-2">
         <label className="block text-xs text-gray-500">Upload file</label>
@@ -137,6 +149,7 @@ export default function ImageNode({ data }: NodeProps) {
         )}
       </div>
 
+      <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
       <Handle id={makeHandleId("out", "image")} type="source" position={Position.Right} />
     </div>
   );

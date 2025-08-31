@@ -18,6 +18,7 @@ import {
   type EdgeChange,
 } from "@xyflow/react";
 import { useCallback, useEffect, useRef } from "react";
+import RemovableEdge from "@/components/flow/RemovableEdge";
 
 type CanvasProps = {
   nodes?: Node[];
@@ -25,9 +26,10 @@ type CanvasProps = {
   onChange?: (nodes: Node[], edges: Edge[]) => void;
   nodeTypes?: Record<string, React.ComponentType<any>>;
   isValidConnection?: (connection: Connection) => boolean;
+  edgeTypes?: Record<string, React.ComponentType<any>>;
 };
 
-export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection }: CanvasProps) {
+export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection, edgeTypes }: CanvasProps) {
   const [rfNodes, setRfNodes] = useNodesState(nodes);
   const [rfEdges, setRfEdges] = useEdgesState(edges);
 
@@ -100,6 +102,9 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
         fitView
         nodeTypes={nodeTypes}
         isValidConnection={isValidConnection}
+        edgeTypes={{ removable: RemovableEdge, ...(edgeTypes || {}) }}
+        defaultEdgeOptions={{ type: "removable" }}
+        deleteKeyCode={["Delete", "Backspace"]}
       >
         <Background variant="dots" gap={16} size={1} />
         <MiniMap pannable zoomable />

@@ -55,11 +55,26 @@ export default function CombineNode({ data }: NodeProps) {
   const hasImage = Boolean(inputs.images.find(Boolean));
 
   return (
-    <div className="rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-56">
-      <div className="font-medium mb-2">Combine</div>
+    <div className="relative rounded-md border border-black/10 dark:border-white/10 bg-white/70 dark:bg-black/40 backdrop-blur p-3 text-sm min-w-56">
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-medium">Combine</div>
+        <button
+          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-1.5 hover:bg-black/5 dark:hover:bg-white/5"
+          onClick={() => {
+            if (!nodeId) return;
+            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+          }}
+          aria-label="Remove node"
+        >
+          ×
+        </button>
+      </div>
       <div className="text-xs text-gray-500">Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}</div>
+      <div className="absolute left-[-6px] top-[24px] -translate-y-1/2 text-[10px] text-gray-500 select-none">string</div>
       <Handle id={makeHandleId("in", "string")} type="target" position={Position.Left} style={{ top: 24 }} />
+      <div className="absolute left-[-6px] top-[48px] -translate-y-1/2 text-[10px] text-gray-500 select-none">image</div>
       <Handle id={makeHandleId("in", "image")} type="target" position={Position.Left} style={{ top: 48 }} />
+      <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 text-[10px] text-gray-500 select-none">combined</div>
       <Handle id={makeHandleId("out", "combined")} type="source" position={Position.Right} />
     </div>
   );
