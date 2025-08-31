@@ -49,6 +49,12 @@ export default function EditorClient({ id }: { id: string }) {
     }, 500);
   }, [doc, dirty, save]);
 
+  // Stable handler for Canvas changes to keep Hooks order consistent
+  const handleCanvasChange = useCallback((nodes: Node[], edges: Edge[]) => {
+    setDoc((prev) => (prev ? { ...prev, nodes: nodes as any, edges: edges as any } : prev));
+    setDirty(true);
+  }, []);
+
   if (loading) {
     return (
       <main className="min-h-screen p-8">
@@ -108,10 +114,7 @@ export default function EditorClient({ id }: { id: string }) {
               <Canvas
                 nodes={doc.nodes as unknown as Node[]}
                 edges={doc.edges as unknown as Edge[]}
-                onChange={useCallback((nodes: Node[], edges: Edge[]) => {
-                  setDoc((prev) => (prev ? { ...prev, nodes: nodes as any, edges: edges as any } : prev));
-                  setDirty(true);
-                }, [])}
+                onChange={handleCanvasChange}
               />
             </div>
           </div>
