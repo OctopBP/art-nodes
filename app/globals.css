@@ -24,3 +24,29 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* React Flow dark theme overrides */
+@media (prefers-color-scheme: dark) {
+  /* Controls buttons */
+  .react-flow__controls {
+    background: transparent;
+    border-color: #2a2a2a;
+  }
+  .react-flow__controls button {
+    background: #161616;
+    color: #e5e5e5;
+    border-color: #2a2a2a;
+  }
+  .react-flow__controls button:hover {
+    background: #1f1f1f;
+  }
+
+  /* MiniMap background + mask */
+  .react-flow__minimap,
+  .react-flow__minimap svg {
+    background: #0f0f10 !important;
+  }
+  .react-flow__minimap-mask {
+    fill: rgba(255, 255, 255, 0.06) !important;
+  }
+}
