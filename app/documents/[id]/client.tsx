@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDocumentsStore } from "@/store/documents";
 import type { DocumentT } from "@/lib/schemas";
 import Canvas from "@/components/flow/Canvas";
+import type { Edge, Node } from "@xyflow/react";
 
 export default function EditorClient({ id }: { id: string }) {
   const { get, save } = useDocumentsStore();
@@ -103,8 +104,14 @@ export default function EditorClient({ id }: { id: string }) {
         <section className="relative">
           <div className="absolute inset-0">
             <div className="w-full h-full">
-              {/* Empty canvas for now; data wiring comes later */}
-              <Canvas />
+              <Canvas
+                nodes={doc.nodes as unknown as Node[]}
+                edges={doc.edges as unknown as Edge[]}
+                onChange={(nodes, edges) => {
+                  setDoc({ ...doc, nodes: nodes as any, edges: edges as any });
+                  setDirty(true);
+                }}
+              />
             </div>
           </div>
         </section>
