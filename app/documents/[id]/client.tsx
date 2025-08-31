@@ -5,13 +5,17 @@ import { useEffect, useRef, useState } from "react";
 import { useDocumentsStore } from "@/store/documents";
 import type { DocumentT } from "@/lib/schemas";
 import Canvas from "@/components/flow/Canvas";
-import type { Edge, Node } from "@xyflow/react";
+import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import { useCallback } from "react";
 import TextNode from "@/components/nodes/TextNode";
 import ImageNode from "@/components/nodes/ImageNode";
 import CombineNode from "@/components/nodes/CombineNode";
 import GenerateNode from "@/components/nodes/GenerateNode";
 import { nanoid } from "nanoid";
+import type { NodeData } from "@/lib/schemas";
+
+type FlowNode = RFNode<NodeData>;
+type FlowEdge = RFEdge;
 
 export default function EditorClient({ id }: { id: string }) {
   const { get, save } = useDocumentsStore();
@@ -55,9 +59,22 @@ export default function EditorClient({ id }: { id: string }) {
   }, [doc, dirty, save]);
 
   // Stable handler for Canvas changes to keep Hooks order consistent
-  const handleCanvasChange = useCallback((nodes: Node[], edges: Edge[]) => {
+  const handleCanvasChange = useCallback((nodes: FlowNode[], edges: FlowEdge[]) => {
     setDoc((prev) => (prev ? { ...prev, nodes: nodes as any, edges: edges as any } : prev));
     setDirty(true);
+  }, []);
+
+  // Keep hooks before any conditional returns
+  const isValidConnection = useCallback((conn: { sourceHandle?: string | null; targetHandle?: string | null }) => {
+    const sh = conn.sourceHandle ?? "";
+    const th = conn.targetHandle ?? "";
+    const sType = sh.split(":")[1];
+    const tType = th.split(":")[1];
+    if (!sType || !tType) return true; // allow by default if unspecified
+    if (sType === "string" && tType === "string") return true;
+    if (sType === "image" && tType === "image") return true;
+    if (sType === "combined" && tType === "combined") return true;
+    return false;
   }, []);
 
   if (loading) {
@@ -108,25 +125,10 @@ export default function EditorClient({ id }: { id: string }) {
         data = { kind: "generate", status: "idle" };
         break;
     }
-    const node: Node = { id, type, position, data } as unknown as Node;
+    const node: FlowNode = { id, type, position, data } as unknown as FlowNode;
     setDoc({ ...doc, nodes: [...doc.nodes, node as any] });
     setDirty(true);
   };
-
-  const isValidConnection = useCallback((conn: { sourceHandle?: string | null; targetHandle?: string | null }) => {
-    const sh = conn.sourceHandle ?? "";
-    const th = conn.targetHandle ?? "";
-    const sType = sh.split(":")[1];
-    const tType = th.split(":")[1];
-    if (!sType || !tType) return true; // allow by default if unspecified
-    // string can go to string inputs
-    if (sType === "string" && tType === "string") return true;
-    // image can go to image inputs
-    if (sType === "image" && tType === "image") return true;
-    // combined can go to combined inputs
-    if (sType === "combined" && tType === "combined") return true;
-    return false;
-  }, []);
 
   return (
     <main className="min-h-screen p-0">
@@ -170,8 +172,8 @@ export default function EditorClient({ id }: { id: string }) {
           <div className="absolute inset-0">
             <div className="w-full h-full">
               <Canvas
-                nodes={doc.nodes as unknown as Node[]}
-                edges={doc.edges as unknown as Edge[]}
+                nodes={doc.nodes as unknown as FlowNode[]}
+                edges={doc.edges as unknown as FlowEdge[]}
                 onChange={handleCanvasChange}
                 nodeTypes={nodeTypes as any}
                 isValidConnection={isValidConnection as any}
