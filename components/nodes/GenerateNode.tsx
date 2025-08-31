@@ -1,7 +1,9 @@
 "use client";
 
 import { Handle, Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useSettingsStore } from "@/store/settings";
+import { generateImage } from "@/lib/genai";
 
 export default function GenerateNode({ data }: NodeProps) {
   const nodeId = useNodeId();
@@ -35,6 +37,8 @@ export default function GenerateNode({ data }: NodeProps) {
   }, [edges, nodes, nodeId]);
 
   const outputImageDataUrl: string | undefined = (data as any)?.outputImageDataUrl;
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
   const ready = Boolean(inputs.text) || Boolean(inputs.combined?.text);
 
   return (
@@ -43,15 +47,37 @@ export default function GenerateNode({ data }: NodeProps) {
       <div className="space-y-2">
         <button
           className="rounded-md border border-black/10 dark:border-white/10 px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/5 dark:hover:bg-white/5"
-          disabled={!ready}
-          onClick={() => {
-            // Placeholder: generation integration comes later
+          disabled={!ready || busy}
+          onClick={async () => {
+            if (!nodeId) return;
+            const prompt = inputs.combined?.text ?? inputs.text ?? "";
+            const refImg = inputs.combined?.imageDataUrl;
+            const apiKey = useSettingsStore.getState().apiKey;
+            const model = useSettingsStore.getState().model || "imagen-3.0";
+            if (!apiKey) {
+              setErr("Missing GOOGLE_AI_API_KEY in Settings");
+              return;
+            }
+            setBusy(true);
+            setErr(null);
+            setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, status: "loading" } } : n)));
+            try {
+              const { dataUrl } = await generateImage({ apiKey, model, prompt, referenceImageDataUrl: refImg, size: "1024x1024" });
+              setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, status: "done", outputImageDataUrl: dataUrl } } : n)));
+            } catch (e) {
+              const msg = (e as Error).message || "Failed to generate image";
+              setErr(msg);
+              setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, status: "error", error: msg } } : n)));
+            } finally {
+              setBusy(false);
+            }
           }}
         >
-          Generate
+          {busy ? "Generating…" : "Generate"}
         </button>
 
         {!ready && <div className="text-xs text-gray-500">Connect Text or Combined input.</div>}
+        {err && <div className="text-xs text-red-600">{err}</div>}
 
         {outputImageDataUrl ? (
           <div className="mt-2">
