@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@xyflow/react": "^12.8.4",
     "idb-keyval": "^6.2.2",
     "nanoid": "^5.1.5",
     "next": "15.5.2",
