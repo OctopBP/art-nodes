@@ -6,6 +6,7 @@ import { useDocumentsStore } from "@/store/documents";
 import type { DocumentT } from "@/lib/schemas";
 import Canvas from "@/components/flow/Canvas";
 import type { Edge, Node } from "@xyflow/react";
+import { useCallback } from "react";
 
 export default function EditorClient({ id }: { id: string }) {
   const { get, save } = useDocumentsStore();
@@ -107,10 +108,10 @@ export default function EditorClient({ id }: { id: string }) {
               <Canvas
                 nodes={doc.nodes as unknown as Node[]}
                 edges={doc.edges as unknown as Edge[]}
-                onChange={(nodes, edges) => {
-                  setDoc({ ...doc, nodes: nodes as any, edges: edges as any });
+                onChange={useCallback((nodes: Node[], edges: Edge[]) => {
+                  setDoc((prev) => (prev ? { ...prev, nodes: nodes as any, edges: edges as any } : prev));
                   setDirty(true);
-                }}
+                }, [])}
               />
             </div>
           </div>
