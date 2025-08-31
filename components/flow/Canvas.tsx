@@ -24,9 +24,10 @@ type CanvasProps = {
   edges?: Edge[];
   onChange?: (nodes: Node[], edges: Edge[]) => void;
   nodeTypes?: Record<string, React.ComponentType<any>>;
+  isValidConnection?: (connection: Connection) => boolean;
 };
 
-export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes }: CanvasProps) {
+export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection }: CanvasProps) {
   const [rfNodes, setRfNodes] = useNodesState(nodes);
   const [rfEdges, setRfEdges] = useEdgesState(edges);
 
@@ -98,6 +99,7 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes }: 
         onConnect={onConnect}
         fitView
         nodeTypes={nodeTypes}
+        isValidConnection={isValidConnection}
       >
         <Background variant="dots" gap={16} size={1} />
         <MiniMap pannable zoomable />

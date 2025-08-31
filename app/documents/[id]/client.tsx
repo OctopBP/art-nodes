@@ -113,6 +113,21 @@ export default function EditorClient({ id }: { id: string }) {
     setDirty(true);
   };
 
+  const isValidConnection = useCallback((conn: { sourceHandle?: string | null; targetHandle?: string | null }) => {
+    const sh = conn.sourceHandle ?? "";
+    const th = conn.targetHandle ?? "";
+    const sType = sh.split(":")[1];
+    const tType = th.split(":")[1];
+    if (!sType || !tType) return true; // allow by default if unspecified
+    // string can go to string inputs
+    if (sType === "string" && tType === "string") return true;
+    // image can go to image inputs
+    if (sType === "image" && tType === "image") return true;
+    // combined can go to combined inputs
+    if (sType === "combined" && tType === "combined") return true;
+    return false;
+  }, []);
+
   return (
     <main className="min-h-screen p-0">
       <div className="border-b border-black/10 dark:border-white/10 px-6 py-3 flex items-center justify-between">
@@ -159,6 +174,7 @@ export default function EditorClient({ id }: { id: string }) {
                 edges={doc.edges as unknown as Edge[]}
                 onChange={handleCanvasChange}
                 nodeTypes={nodeTypes as any}
+                isValidConnection={isValidConnection as any}
               />
             </div>
           </div>
