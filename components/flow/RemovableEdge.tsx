@@ -24,6 +24,11 @@ export default function RemovableEdge(props: EdgeProps) {
   } = props;
 
   const { setEdges } = useReactFlow();
+  const edgeStyle = {
+    stroke: "#94a3b8", // slate-400
+    strokeWidth: 1.5,
+    ...(style || {}),
+  } as React.CSSProperties;
 
   const [cx, cy] =
     typeof labelX === "number" && typeof labelY === "number"
@@ -32,7 +37,7 @@ export default function RemovableEdge(props: EdgeProps) {
 
   return (
     <>
-      <BaseEdge id={id} path={path} markerEnd={markerEnd} markerStart={markerStart} style={style} />
+      <BaseEdge id={id} path={path} markerEnd={markerEnd} markerStart={markerStart} style={edgeStyle} />
       <EdgeLabelRenderer>
         <button
           onClick={(e) => {
