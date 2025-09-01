@@ -5,8 +5,11 @@ import { makeHandleId } from "@/lib/ports";
 import { useEffect, useMemo } from "react";
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
+import type { CombineNodeData, Combined } from "@/lib/schemas";
 
-export default function CombineNode({ data }: NodeProps) {
+type CombineRuntimeData = CombineNodeData & { combined?: Combined };
+
+export default function CombineNode({ data }: NodeProps<CombineRuntimeData>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
   const nodes = useStore((s) => s.nodes);
@@ -45,7 +48,7 @@ export default function CombineNode({ data }: NodeProps) {
     if (!nodeId) return;
     const text = inputs.strings.length ? inputs.strings.join("\n") : undefined;
     const imageDataUrl = inputs.images.find(Boolean) || undefined;
-    const prevCombined = (data as any)?.combined as { text?: string; imageDataUrl?: string } | undefined;
+    const prevCombined = data?.combined as { text?: string; imageDataUrl?: string } | undefined;
     const nextCombined = { text, imageDataUrl };
     const equal = prevCombined?.text === nextCombined.text && prevCombined?.imageDataUrl === nextCombined.imageDataUrl;
     if (equal) return;

@@ -1,20 +1,20 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useDocumentsStore } from "@/store/documents";
-import type { DocumentT } from "@/lib/schemas";
-import Canvas from "@/components/flow/Canvas";
-import type { Edge as RFEdge, Node as RFNode, Connection } from "@xyflow/react";
-import { useCallback } from "react";
-import TextNode from "@/components/nodes/TextNode";
-import ImageNode from "@/components/nodes/ImageNode";
-import CombineNode from "@/components/nodes/CombineNode";
-import GenerateNode from "@/components/nodes/GenerateNode";
-import { nanoid } from "nanoid";
-import type { NodeData } from "@/lib/schemas";
-import { isValidConnectionByHandles } from "@/lib/ports";
+import { GitMerge, Image as ImageIcon, Type, Wand2 } from 'lucide-react'
+import { nanoid } from 'nanoid'
+import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import Canvas from '@/components/flow/Canvas'
+import CombineNode from '@/components/nodes/CombineNode'
+import GenerateNode from '@/components/nodes/GenerateNode'
+import ImageNode from '@/components/nodes/ImageNode'
+import TextNode from '@/components/nodes/TextNode'
+import { isValidConnectionByHandles } from '@/lib/ports'
+import { useDocumentsStore } from '@/store/documents'
 
+import type { DocumentT } from "@/lib/schemas";
+import type { Edge as RFEdge, Node as RFNode, Connection } from "@xyflow/react";
+import type { NodeData } from "@/lib/schemas";
 type FlowNode = RFNode<NodeData>;
 type FlowEdge = RFEdge;
 
@@ -66,9 +66,41 @@ export default function EditorClient({ id }: { id: string }) {
   }, []);
 
   // Keep hooks before any conditional returns
-  const isValidConnection = useCallback((conn: Connection) => {
-    return isValidConnectionByHandles(conn);
-  }, []);
+  const isValidConnection = useCallback(
+    (conn: Connection) => {
+      // First, enforce port types
+      if (!isValidConnectionByHandles(conn)) return false;
+      // Then, prevent cycles: disallow if there is already a path from target -> source
+      const source = conn.source;
+      const target = conn.target;
+      if (!source || !target) return true;
+
+      // Build adjacency from current edges (use the latest doc state)
+      const edges = (doc?.edges || []) as unknown as FlowEdge[];
+      const adj = new Map<string, string[]>();
+      for (const e of edges) {
+        if (!adj.has(e.source)) adj.set(e.source, []);
+        adj.get(e.source)!.push(e.target);
+      }
+      // Include the proposed edge
+      if (!adj.has(source)) adj.set(source, []);
+      adj.get(source)!.push(target);
+
+      // DFS from target to see if we can reach source
+      const seen = new Set<string>();
+      const stack = [target];
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (n === source) return false; // cycle detected
+        if (seen.has(n)) continue;
+        seen.add(n);
+        const nxt = adj.get(n) || [];
+        for (const m of nxt) stack.push(m);
+      }
+      return true;
+    },
+    [doc?.edges]
+  );
 
   if (loading) {
     return (
@@ -143,25 +175,42 @@ export default function EditorClient({ id }: { id: string }) {
         <div className="text-sm text-gray-500">Document ID: {doc.id}</div>
       </div>
 
-      <div className="h-[calc(100vh-56px)] grid grid-cols-[240px_1fr]">
-        <aside className="border-r border-black/10 dark:border-white/10 p-4">
-          <div className="text-sm font-medium mb-2">Toolbar</div>
-          <div className="text-sm space-y-2 text-gray-700 dark:text-gray-300">
-            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("text")}>
-              + Text Node
+      <div className="h-[calc(100vh-56px)] relative">
+        <section className="relative w-full h-full">
+          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-2 rounded-md text-white bg-black">
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
+              onClick={() => addNode("text")}
+              aria-label="Add text"
+              title="Add text"
+            >
+              <Type className="h-4 w-4" />
             </button>
-            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("image")}>
-              + Image Node
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
+              onClick={() => addNode("image")}
+              aria-label="Add image"
+              title="Add image"
+            >
+              <ImageIcon className="h-4 w-4" />
             </button>
-            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("combine")}>
-              + Combine Node
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
+              onClick={() => addNode("combine")}
+              aria-label="Add combine"
+              title="Add combine"
+            >
+              <GitMerge className="h-4 w-4" />
             </button>
-            <button className="block w-full text-left rounded border border-black/10 dark:border-white/10 px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5" onClick={() => addNode("generate")}>
-              + Generate Node
+            <button
+              className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
+              onClick={() => addNode("generate")}
+              aria-label="Add generate"
+              title="Add generate"
+            >
+              <Wand2 className="h-4 w-4" />
             </button>
           </div>
-        </aside>
-        <section className="relative">
           <div className="absolute inset-0">
             <div className="w-full h-full">
               <Canvas

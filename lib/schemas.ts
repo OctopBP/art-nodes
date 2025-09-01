@@ -28,10 +28,12 @@ export const ZImageNodeData = z.object({
     .optional(),
   source: z.enum(["file", "url"]).optional(),
   filename: z.string().optional(),
+  error: z.string().optional(),
 });
 
 export const ZCombineNodeData = z.object({
   kind: z.literal("combine"),
+  combined: ZCombined.optional(),
 });
 
 export const ZGenerateNodeData = z.object({
@@ -92,4 +94,3 @@ export type NodeData = z.infer<typeof ZNodeData>;
 export type RFNode = z.infer<typeof ZRFNode>;
 export type RFEdge = z.infer<typeof ZRFEdge>;
 export type DocumentT = z.infer<typeof ZDocument>;
-

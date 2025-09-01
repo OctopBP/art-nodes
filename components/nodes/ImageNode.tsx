@@ -4,6 +4,8 @@ import { Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react
 import { makeHandleId } from "@/lib/ports";
 import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle, BaseNodeContent } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
+import type { ImageNodeData } from "@/lib/schemas";
+
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
   const canvas = document.createElement("canvas");
@@ -28,7 +30,7 @@ async function urlToPngDataUrl(url: string): Promise<string> {
   return imageBitmapToPngDataUrl(bitmap);
 }
 
-export default function ImageNode({ data }: NodeProps) {
+export default function ImageNode({ data }: NodeProps<ImageNodeData>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
 
@@ -64,8 +66,8 @@ export default function ImageNode({ data }: NodeProps) {
     }
   };
 
-  const imageDataUrl: string | undefined = (data as any)?.imageDataUrl;
-  const filename: string | undefined = (data as any)?.filename;
+  const imageDataUrl: string | undefined = data?.imageDataUrl;
+  const filename: string | undefined = data?.filename;
   const error: string | undefined = (data as any)?.error;
 
   return (
@@ -73,14 +75,14 @@ export default function ImageNode({ data }: NodeProps) {
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Image</BaseNodeHeaderTitle>
       </BaseNodeHeader>
-      <div className="px-3 py-2 flex items-center justify-between">
+      <div className="px-3 py-2 flex justify-between">
         <div />
         <LabeledHandle
           id={makeHandleId("out", "image")}
           type="source"
           position={Position.Right}
-          title="image"
-          labelClassName="text-[10px] text-foreground/70"
+				  title="image"
+				  labelClassName="text-[10px] text-foreground/70"
         />
       </div>
       

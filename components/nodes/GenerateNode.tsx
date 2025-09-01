@@ -6,9 +6,12 @@ import { useMemo, useState } from "react";
 import { useSettingsStore } from "@/store/settings";
 import { generateImage } from "@/lib/genai";
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
+import { NodeStatusIndicator } from "@/components/node-status-indicator";
 import { LabeledHandle } from "@/components/labeled-handle";
+import { DEFAULT_MODEL } from "@/lib/config";
+import type { GenerateNodeData } from "@/lib/schemas";
 
-export default function GenerateNode({ data }: NodeProps) {
+export default function GenerateNode({ data }: NodeProps<GenerateNodeData>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
   const nodes = useStore((s) => s.nodes);
@@ -39,12 +42,16 @@ export default function GenerateNode({ data }: NodeProps) {
     return { text, combined };
   }, [edges, nodes, nodeId]);
 
-  const outputImageDataUrl: string | undefined = (data as any)?.outputImageDataUrl;
+  const outputImageDataUrl: string | undefined = data?.outputImageDataUrl;
+  const lastInputsHash: string | undefined = data?.lastInputsHash;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const ready = Boolean(inputs.text) || Boolean(inputs.combined?.text);
 
+  const status = busy ? "loading" : err ? "error" : outputImageDataUrl ? "success" : "initial";
+
   return (
+    <NodeStatusIndicator status={status} variant="border">
     <BaseNode className="min-w-64">
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Generate</BaseNodeHeaderTitle>
@@ -65,17 +72,31 @@ export default function GenerateNode({ data }: NodeProps) {
             const prompt = inputs.combined?.text ?? inputs.text ?? "";
             const refImg = inputs.combined?.imageDataUrl;
             const apiKey = useSettingsStore.getState().apiKey;
-            const model = useSettingsStore.getState().model || "imagen-3.0";
+            const model = useSettingsStore.getState().model || DEFAULT_MODEL;
+            const preferPlaceholderOn429 = useSettingsStore.getState().placeholderOnRateLimit;
             if (!apiKey) {
               setErr("Missing GOOGLE_AI_API_KEY in Settings");
+              return;
+            }
+
+            // Simple caching by input signature
+            const signature = JSON.stringify({ prompt, refImg, model, size: "1024x1024" });
+            if (lastInputsHash && lastInputsHash === signature && outputImageDataUrl) {
+              // Up-to-date; no-op
               return;
             }
             setBusy(true);
             setErr(null);
             setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, status: "loading" } } : n)));
             try {
-              const { dataUrl } = await generateImage({ apiKey, model, prompt, referenceImageDataUrl: refImg, size: "1024x1024" });
-              setNodes((ns) => ns.map((n) => (n.id === nodeId ? { ...n, data: { ...n.data, status: "done", outputImageDataUrl: dataUrl } } : n)));
+              const { dataUrl } = await generateImage({ apiKey, model, prompt, referenceImageDataUrl: refImg, size: "1024x1024", preferPlaceholderOn429 });
+              setNodes((ns) =>
+                ns.map((n) =>
+                  n.id === nodeId
+                    ? { ...n, data: { ...n.data, status: "done", outputImageDataUrl: dataUrl, lastInputsHash: signature } }
+                    : n
+                )
+              );
             } catch (e) {
               const msg = (e as Error).message || "Failed to generate image";
               setErr(msg);
@@ -103,11 +124,13 @@ export default function GenerateNode({ data }: NodeProps) {
                 Download PNG
               </a>
             </div>
+            {lastInputsHash && <div className="mt-1 text-[10px] text-gray-500">Cached for current inputs</div>}
           </div>
         ) : (
           <div className="text-xs text-gray-500">No output yet.</div>
         )}
       </BaseNodeContent>
     </BaseNode>
+    </NodeStatusIndicator>
   );
 }

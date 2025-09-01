@@ -10,8 +10,10 @@ export type ParsedHandle = {
 };
 
 // Format: `${dir}:${type}` e.g., "out:string", "in:image"
-export function makeHandleId(dir: PortDir, type: PortType): string {
-  return `${dir}:${type}`;
+export type HandleId = `${PortDir}:${PortType}`;
+
+export function makeHandleId(dir: PortDir, type: PortType): HandleId {
+  return `${dir}:${type}` as HandleId;
 }
 
 export function parseHandleId(id?: string | null): ParsedHandle {
@@ -24,8 +26,11 @@ export function parseHandleId(id?: string | null): ParsedHandle {
 }
 
 export function isPortCompatible(source?: PortType, target?: PortType): boolean {
-  if (!source || !target) return true;
-  return source === target;
+  if (!source || !target) return false;
+  if (source === target) return true;
+  // Allow combined → string (e.g., feed just the text part into a string input)
+  if (source === "combined" && target === "string") return true;
+  return false;
 }
 
 export function isValidConnectionByHandles(connection: Connection): boolean {
@@ -33,4 +38,3 @@ export function isValidConnectionByHandles(connection: Connection): boolean {
   const t = parseHandleId(connection.targetHandle);
   return isPortCompatible(s.type, t.type);
 }
-

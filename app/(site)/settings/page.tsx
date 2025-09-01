@@ -2,19 +2,17 @@
 
 import { useState } from "react";
 import { useSettingsStore } from "@/store/settings";
+import { MODEL_OPTIONS } from "@/lib/config";
 
 export default function SettingsPage() {
   const apiKey = useSettingsStore((s) => s.apiKey);
   const model = useSettingsStore((s) => s.model);
   const setApiKey = useSettingsStore((s) => s.setApiKey);
   const setModel = useSettingsStore((s) => s.setModel);
+  const placeholderOnRateLimit = useSettingsStore((s) => s.placeholderOnRateLimit);
+  const setPlaceholderOnRateLimit = useSettingsStore((s) => s.setPlaceholderOnRateLimit);
   const [showKey, setShowKey] = useState(false);
-  const MODEL_OPTIONS = [
-    { value: "imagen-3.0", label: "Imagen 3.0 (default)" },
-    { value: "imagen-3.0-fast", label: "Imagen 3.0 Fast" },
-    { value: "imagen-3.0-large", label: "Imagen 3.0 Large" },
-    { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
-  ];
+  // options provided by config
 
   return (
     <main className="min-h-screen p-8">
@@ -46,7 +44,7 @@ export default function SettingsPage() {
               {showKey ? "Hide" : "Show"}
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Stored locally in your browser (IndexedDB).</p>
+          <p className="text-xs text-gray-500 mt-1">Stored locally in your browser (IndexedDB). Do not use production keys in client-side apps.</p>
         </div>
 
         <div>
@@ -69,8 +67,18 @@ export default function SettingsPage() {
         </div>
 
         <div className="text-xs text-gray-500">Changes save automatically.</div>
+        <div className="pt-4 border-t border-black/10 dark:border-white/10">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={placeholderOnRateLimit}
+              onChange={(e) => setPlaceholderOnRateLimit(e.target.checked)}
+            />
+            Fallback to placeholder on rate limit (429)
+          </label>
+          <p className="text-xs text-gray-500 mt-1">If enabled, uses a local placeholder image when rate-limited instead of waiting to retry.</p>
+        </div>
       </section>
     </main>
   );
 }
-
