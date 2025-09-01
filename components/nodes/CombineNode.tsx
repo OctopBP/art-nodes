@@ -1,6 +1,6 @@
 "use client";
 
-import { Position, NodeResizer, NodeToolbar, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useEffect, useMemo } from "react";
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
@@ -58,47 +58,15 @@ export default function CombineNode({ data }: NodeProps) {
 
   return (
     <BaseNode className="min-w-56">
-      <NodeResizer minWidth={224} minHeight={120} handleClassName="border border-black/20 dark:border-white/20" />
-      <NodeToolbar isVisible={useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected)} position="top" align="center">
-        <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
-          onClick={() => {
-            if (!nodeId) return;
-            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
-          }}
-        >
-          Remove
-        </button>
-      </NodeToolbar>
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Combine</BaseNodeHeaderTitle>
       </BaseNodeHeader>
-      <div className="relative h-16">
-        <LabeledHandle
-          id={makeHandleId("in", "string")}
-          type="target"
-          position={Position.Left}
-          title="string"
-          className="absolute left-[-6px] top-[12px] -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <LabeledHandle
-          id={makeHandleId("in", "image")}
-          type="target"
-          position={Position.Left}
-          title="image"
-          className="absolute left-[-6px] top-[36px] -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <LabeledHandle
-          id={makeHandleId("out", "combined")}
-          type="source"
-          position={Position.Right}
-          title="combined"
-          className="absolute right-[-6px] top-1/2 -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
+      <div className="px-3 py-2 flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-2">
+          <LabeledHandle id={makeHandleId("in", "string")} type="target" position={Position.Left} title="string" labelClassName="text-[10px] text-foreground/70" />
+          <LabeledHandle id={makeHandleId("in", "image")} type="target" position={Position.Left} title="image" labelClassName="text-[10px] text-foreground/70" />
+        </div>
+        <LabeledHandle id={makeHandleId("out", "combined")} type="source" position={Position.Right} title="combined" labelClassName="text-[10px] text-foreground/70" />
       </div>
       <BaseNodeContent className="text-xs text-muted-foreground">
         Strings: {stringsCount} • Image: {hasImage ? "yes" : "no"}

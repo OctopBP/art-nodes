@@ -1,6 +1,6 @@
 "use client";
 
-import { Position, NodeToolbar, NodeResizer, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle, BaseNodeContent } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
@@ -31,7 +31,6 @@ async function urlToPngDataUrl(url: string): Promise<string> {
 export default function ImageNode({ data }: NodeProps) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
-  const selected = useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected);
 
   const setImage = (imageDataUrl?: string, filename?: string, error?: string) => {
     if (!nodeId) return;
@@ -71,33 +70,20 @@ export default function ImageNode({ data }: NodeProps) {
 
   return (
     <BaseNode className="min-w-64">
-      <NodeResizer minWidth={256} minHeight={200} handleClassName="border border-black/20 dark:border-white/20" />
-      <NodeToolbar isVisible={selected} position="top" align="center">
-        <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
-          onClick={() => {
-            if (!nodeId) return;
-            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
-          }}
-        >
-          Remove
-        </button>
-      </NodeToolbar>
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Image</BaseNodeHeaderTitle>
       </BaseNodeHeader>
-      <div className="relative h-10 px-3 grid items-center">
+      <div className="px-3 py-2 flex items-center justify-between">
+        <div />
         <LabeledHandle
           id={makeHandleId("out", "image")}
           type="source"
           position={Position.Right}
           title="image"
-          className="absolute right-[-6px] top-1/2 -translate-y-1/2"
           labelClassName="text-[10px] text-foreground/70"
         />
-        <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
       </div>
-
+      
       <BaseNodeContent className="space-y-2">
         <label className="block text-xs text-gray-500">Upload file</label>
         <input

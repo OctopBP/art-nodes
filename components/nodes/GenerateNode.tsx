@@ -1,6 +1,6 @@
 "use client";
 
-import { Position, NodeResizer, NodeToolbar, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useMemo, useState } from "react";
 import { useSettingsStore } from "@/store/settings";
@@ -46,47 +46,15 @@ export default function GenerateNode({ data }: NodeProps) {
 
   return (
     <BaseNode className="min-w-64">
-      <NodeResizer minWidth={256} minHeight={220} handleClassName="border border-black/20 dark:border-white/20" />
-      <NodeToolbar isVisible={useStore((s) => !!s.nodes.find((n) => n.id === nodeId)?.selected)} position="top" align="center">
-        <button
-          className="nodrag nopan text-xs rounded border border-black/10 dark:border-white/10 px-2 py-1 bg-white/80 dark:bg-black/60 hover:bg-black/5 dark:hover:bg-white/10"
-          onClick={() => {
-            if (!nodeId) return;
-            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
-          }}
-        >
-          Remove
-        </button>
-      </NodeToolbar>
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Generate</BaseNodeHeaderTitle>
       </BaseNodeHeader>
-      <div className="relative h-16">
-        <LabeledHandle
-          id={makeHandleId("in", "string")}
-          type="target"
-          position={Position.Left}
-          title="string"
-          className="absolute left-[-6px] top-[12px] -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <LabeledHandle
-          id={makeHandleId("in", "combined")}
-          type="target"
-          position={Position.Left}
-          title="combined"
-          className="absolute left-[-6px] top-[36px] -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <LabeledHandle
-          id={makeHandleId("out", "image")}
-          type="source"
-          position={Position.Right}
-          title="image"
-          className="absolute right-[-6px] top-1/2 -translate-y-1/2"
-          labelClassName="text-[10px] text-foreground/70"
-        />
-        <div className="w-full h-px bg-black/10 dark:bg-white/10 absolute bottom-0 left-0" />
+      <div className="px-3 py-2 flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-2">
+          <LabeledHandle id={makeHandleId("in", "string")} type="target" position={Position.Left} title="string" labelClassName="text-[10px] text-foreground/70" />
+          <LabeledHandle id={makeHandleId("in", "combined")} type="target" position={Position.Left} title="combined" labelClassName="text-[10px] text-foreground/70" />
+        </div>
+        <LabeledHandle id={makeHandleId("out", "image")} type="source" position={Position.Right} title="image" labelClassName="text-[10px] text-foreground/70" />
       </div>
       <BaseNodeContent className="space-y-2">
         <button
