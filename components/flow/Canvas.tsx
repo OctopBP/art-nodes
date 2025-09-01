@@ -103,7 +103,10 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
         nodeTypes={nodeTypes}
         isValidConnection={isValidConnection}
         edgeTypes={{ removable: RemovableEdge, ...(edgeTypes || {}) }}
-        defaultEdgeOptions={{ type: "removable" }}
+        defaultEdgeOptions={{
+          type: "removable",
+          style: { stroke: "#94a3b8", strokeWidth: 1.5 },
+        }}
         deleteKeyCode={["Delete", "Backspace"]}
       >
         <Background variant="dots" gap={16} size={1} />
