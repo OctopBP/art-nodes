@@ -1,58 +1,29 @@
 "use client";
 
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getEdgeCenter,
-  type EdgeProps,
-  useReactFlow,
-} from "@xyflow/react";
+import type { EdgeProps } from "@xyflow/react";
+import { useReactFlow } from "@xyflow/react";
+import ButtonEdge from "@/components/flow/ButtonEdge";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 export default function RemovableEdge(props: EdgeProps) {
-  const {
-    id,
-    path,
-    markerEnd,
-    markerStart,
-    style,
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    labelX,
-    labelY,
-  } = props;
-
+  const { id } = props;
   const { setEdges } = useReactFlow();
-  const edgeStyle = {
-    stroke: "#94a3b8", // slate-400
-    strokeWidth: 1.5,
-    ...(style || {}),
-  } as React.CSSProperties;
-
-  const [cx, cy] =
-    typeof labelX === "number" && typeof labelY === "number"
-      ? [labelX, labelY]
-      : getEdgeCenter({ sourceX, sourceY, targetX, targetY });
-
   return (
-    <>
-      <BaseEdge id={id} path={path} markerEnd={markerEnd} markerStart={markerStart} style={edgeStyle} />
-      <EdgeLabelRenderer>
-        <button
+    <ButtonEdge {...props}>
+      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          size="icon"
+          variant="outline"
           onClick={(e) => {
             e.stopPropagation();
             setEdges((eds) => eds.filter((e) => e.id !== id));
           }}
-          className="nodrag nopan absolute rounded bg-white/80 dark:bg-black/60 border border-black/10 dark:border-white/10 text-xs px-1.5 py-0.5 shadow opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-          style={{
-            transform: `translate(-50%, -50%) translate(${cx}px, ${cy}px)`,
-            pointerEvents: "all",
-          }}
+          className="h-6 w-6 rounded-full p-0 bg-background/80"
         >
-          ×
-        </button>
-      </EdgeLabelRenderer>
-    </>
+          <X className="h-3 w-3" />
+        </Button>
+      </div>
+    </ButtonEdge>
   );
 }
