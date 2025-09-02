@@ -1,7 +1,7 @@
 ## Simplest single-stage Dockerfile for Next.js (Node 20)
 ## Builds and runs the app with npm, no multi-stage/standalone.
 
-FROM node:20-bookworm-slim
+FROM node:20-bullseye
 
 # Avoid npm audit/fund noise and disable Next telemetry
 ENV NEXT_TELEMETRY_DISABLED=1 \
@@ -10,9 +10,13 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 
 WORKDIR /app
 
-# Install dependencies (includes devDependencies so TypeScript is available)
+# Install a stable npm to avoid known npm install bugs in some images
+RUN npm -v && npm i -g npm@10.8.2 && npm -v
+
+# Install dependencies (include devDependencies so TypeScript is available)
 COPY package.json package-lock.json ./
-RUN npm install --no-audit --no-fund
+# Ensure dev deps are installed by setting NODE_ENV just for this command
+RUN npm ci --no-audit --no-fund
 
 # Copy source and build
 COPY . .
