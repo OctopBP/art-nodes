@@ -1,6 +1,6 @@
 "use client";
 
-import { Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow, useStore, type Node as RFNode } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useMemo, useState } from "react";
 import { useSettingsStore } from "@/store/settings";
@@ -9,12 +9,13 @@ import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "
 import { NodeStatusIndicator } from "@/components/node-status-indicator";
 import { LabeledHandle } from "@/components/labeled-handle";
 import { DEFAULT_MODEL } from "@/lib/config";
-import type { GenerateNodeData } from "@/lib/schemas";
+import type { GenerateNodeData, NodeData } from "@/lib/schemas";
+import Image from "next/image";
 
-export default function GenerateNode({ data }: NodeProps<GenerateNodeData>) {
+export default function GenerateNode({ data }: NodeProps<RFNode<GenerateNodeData>>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
-  const nodes = useStore((s) => s.nodes);
+  const nodes = useStore((s) => s.nodes) as unknown as RFNode<NodeData>[];
   const edges = useStore((s) => s.edges);
 
   const inputs = useMemo(() => {
@@ -25,17 +26,17 @@ export default function GenerateNode({ data }: NodeProps<GenerateNodeData>) {
     for (const e of incoming) {
       const src = nodes.find((n) => n.id === e.source);
       if (!src) continue;
+      const d = src.data as NodeData | undefined;
+      if (!d) continue;
       if (e.targetHandle?.endsWith(":string")) {
-        if (src.type === "text") {
-          text = (src.data as any)?.text ?? text;
-        } else if (src.type === "combine") {
-          text = (src.data as any)?.combined?.text ?? text;
+        if (d.kind === "text") {
+          text = d.text ?? text;
+        } else if (d.kind === "combine") {
+          text = d.combined?.text ?? text;
         }
       } else if (e.targetHandle?.endsWith(":combined")) {
-        if (src.type === "combine") {
-          const t = (src.data as any)?.combined?.text as string | undefined;
-          const img = (src.data as any)?.combined?.imageDataUrl as string | undefined;
-          combined = { text: t, imageDataUrl: img };
+        if (d.kind === "combine") {
+          combined = { text: d.combined?.text, imageDataUrl: d.combined?.imageDataUrl };
         }
       }
     }
@@ -114,7 +115,7 @@ export default function GenerateNode({ data }: NodeProps<GenerateNodeData>) {
 
         {outputImageDataUrl ? (
           <div className="mt-2">
-            <img src={outputImageDataUrl} alt="output" className="max-w-[240px] max-h-[180px] rounded-md border border-black/10 dark:border-white/10" />
+            <Image src={outputImageDataUrl} alt="output" width={240} height={180} unoptimized className="max-w-[240px] max-h-[180px] rounded-md border border-black/10 dark:border-white/10" />
             <div className="mt-2 flex gap-2">
               <a
                 href={outputImageDataUrl}

@@ -6,11 +6,11 @@ import {
 } from '@/components/base-node'
 import { LabeledHandle } from '@/components/labeled-handle'
 import { makeHandleId } from '@/lib/ports'
-import { type NodeProps, Position, useNodeId, useReactFlow } from '@xyflow/react'
+import { type NodeProps, Position, useNodeId, useReactFlow, type Node as RFNode } from '@xyflow/react'
 import type { TextNodeData } from '@/lib/schemas'
 import { Button } from '../ui/button'
 
-export default function TextNode({ data }: NodeProps<TextNodeData>) {
+export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
 

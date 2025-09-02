@@ -46,7 +46,7 @@ export async function getSetting<T = unknown>(key: string): Promise<T | undefine
 }
 
 export async function setSetting<T = unknown>(key: string, value: T): Promise<void> {
-  await set(key, value as unknown as any, stores.settings);
+  await set(key, value as unknown, stores.settings);
 }
 
 export async function deleteSetting(key: string): Promise<void> {

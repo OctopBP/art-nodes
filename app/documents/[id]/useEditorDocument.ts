@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { nanoid } from "nanoid";
 import { useDocumentsStore } from "@/store/documents";
-import type { DocumentT, NodeData } from "@/lib/schemas";
-import type { Connection, Edge as RFEdge, Node as RFNode } from "@xyflow/react";
+import type { DocumentT, NodeData, RFNode as SchemaRFNode, RFEdge as SchemaRFEdge } from "@/lib/schemas";
+import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import { createDefaultNodeData, type NodeTypeKey } from "@/components/flow/nodeRegistry";
 
-type FlowNode = RFNode<NodeData>;
+type FlowNode = RFNode;
 type FlowEdge = RFEdge;
 
 export function useEditorDocument(id: string) {
@@ -48,7 +48,20 @@ export function useEditorDocument(id: string) {
   }, [doc, dirty, save]);
 
   const handleCanvasChange = useCallback((nodes: FlowNode[], edges: FlowEdge[]) => {
-    setDoc((prev) => (prev ? { ...prev, nodes: nodes as any, edges: edges as any } : prev));
+    const toSchemaNode = (n: FlowNode): SchemaRFNode => ({
+      id: n.id,
+      type: String(n.type || ""),
+      position: { x: n.position.x, y: n.position.y },
+      data: (n.data as NodeData),
+    });
+    const toSchemaEdge = (e: FlowEdge): SchemaRFEdge => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? undefined,
+      targetHandle: e.targetHandle ?? undefined,
+    });
+    setDoc((prev) => (prev ? { ...prev, nodes: nodes.map(toSchemaNode), edges: edges.map(toSchemaEdge) } : prev));
     setDirty(true);
   }, []);
 
@@ -57,8 +70,8 @@ export function useEditorDocument(id: string) {
     const idStr = nanoid(8);
     const position = { x: 200 + doc.nodes.length * 40, y: 120 + doc.nodes.length * 20 };
     const data = createDefaultNodeData(type);
-    const node: FlowNode = { id: idStr, type, position, data } as unknown as FlowNode;
-    setDoc({ ...doc, nodes: [...doc.nodes, node as any] });
+    const node: SchemaRFNode = { id: idStr, type, position, data };
+    setDoc({ ...doc, nodes: [...doc.nodes, node] });
     setDirty(true);
   }, [doc]);
 
@@ -70,4 +83,3 @@ export function useEditorDocument(id: string) {
 
   return { doc, setDoc, loading, error, dirty, setDirty, handleCanvasChange, addNode, setTitle } as const;
 }
-

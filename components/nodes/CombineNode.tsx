@@ -1,18 +1,18 @@
 "use client";
 
-import { Position, type NodeProps, useNodeId, useReactFlow, useStore } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow, useStore, type Node as RFNode } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { useEffect, useMemo } from "react";
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
-import type { CombineNodeData, Combined } from "@/lib/schemas";
+import type { CombineNodeData, Combined, NodeData } from "@/lib/schemas";
 
 type CombineRuntimeData = CombineNodeData & { combined?: Combined };
 
-export default function CombineNode({ data }: NodeProps<CombineRuntimeData>) {
+export default function CombineNode({ data }: NodeProps<RFNode<CombineRuntimeData>>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
-  const nodes = useStore((s) => s.nodes);
+  const nodes = useStore((s) => s.nodes) as unknown as RFNode<NodeData>[];
   const edges = useStore((s) => s.edges);
 
   const inputs = useMemo(() => {
@@ -25,20 +25,31 @@ export default function CombineNode({ data }: NodeProps<CombineRuntimeData>) {
     const strings: string[] = [];
     const images: (string | undefined)[] = [];
     for (const n of sources) {
-      if (n.type === "text") {
-        const t = (n.data as any)?.text as string | undefined;
-        if (t) strings.push(t);
-      } else if (n.type === "image") {
-        const img = (n.data as any)?.imageDataUrl as string | undefined;
-        if (img) images.push(img);
-      } else if (n.type === "combine") {
-        const t = (n.data as any)?.combined?.text as string | undefined;
-        const img = (n.data as any)?.combined?.imageDataUrl as string | undefined;
-        if (t) strings.push(t);
-        if (img) images.push(img);
-      } else if (n.type === "generate") {
-        const img = (n.data as any)?.outputImageDataUrl as string | undefined;
-        if (img) images.push(img);
+      const d = (n.data as NodeData | undefined);
+      if (!d) continue;
+      switch (d.kind) {
+        case "text": {
+          const t = d.text;
+          if (t) strings.push(t);
+          break;
+        }
+        case "image": {
+          const img = d.imageDataUrl;
+          if (img) images.push(img);
+          break;
+        }
+        case "combine": {
+          const t = d.combined?.text;
+          const img = d.combined?.imageDataUrl;
+          if (t) strings.push(t);
+          if (img) images.push(img);
+          break;
+        }
+        case "generate": {
+          const img = d.outputImageDataUrl;
+          if (img) images.push(img);
+          break;
+        }
       }
     }
     return { strings, images };

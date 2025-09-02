@@ -17,6 +17,8 @@ import {
   type NodeChange,
   type EdgeChange,
 } from "@xyflow/react";
+import { BackgroundVariant } from "@xyflow/react";
+import type { ReactFlowProps } from "@xyflow/react";
 import { useCallback, useEffect, useRef } from "react";
 import RemovableEdge from "@/components/flow/RemovableEdge";
 
@@ -24,9 +26,9 @@ type CanvasProps = {
   nodes?: Node[];
   edges?: Edge[];
   onChange?: (nodes: Node[], edges: Edge[]) => void;
-  nodeTypes?: Record<string, React.ComponentType<any>>;
-  isValidConnection?: (connection: Connection) => boolean;
-  edgeTypes?: Record<string, React.ComponentType<any>>;
+  nodeTypes?: ReactFlowProps['nodeTypes'];
+  isValidConnection?: ReactFlowProps['isValidConnection'];
+  edgeTypes?: ReactFlowProps['edgeTypes'];
 };
 
 export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection, edgeTypes }: CanvasProps) {
@@ -81,7 +83,7 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
       shouldEmitRef.current = true;
       return next;
     });
-  }, []);
+  }, [setRfEdges]);
 
   // Emit external change only after internal state updates commit
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
         }}
         deleteKeyCode={["Delete", "Backspace"]}
       >
-        <Background variant="dots" gap={16} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
         <MiniMap pannable zoomable />
         <Controls position="bottom-left" />
       </ReactFlow>

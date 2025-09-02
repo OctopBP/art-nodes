@@ -13,14 +13,14 @@ export type GenerateImageParams = {
 
 export async function generateImage(params: GenerateImageParams): Promise<{ dataUrl: string }> {
   // Try the official SDK first; only fall back to placeholder when SDK is missing.
-  const mod: any = await import("@google/genai").catch(() => null);
+  const mod: unknown = await import("@google/genai").catch(() => null);
   if (mod) {
     // Prefer GoogleGenAI per current SDK versions
-    const GoogleGenAI = mod.GoogleGenAI || mod.GoogleAI || mod.default;
+    const m = mod as Record<string, unknown>;
+    const GoogleGenAI = (m?.GoogleGenAI ?? m?.GoogleAI ?? m?.default) as unknown;
     if (!GoogleGenAI) {
       throw new Error("@google/genai is installed but exports are unexpected");
     }
-    const Modality: any = (mod as any).Modality;
     const { PROMPTS, isPreviewImageModel } = await import("@/lib/config");
 
     const isBrowser = typeof window !== 'undefined';
@@ -28,14 +28,20 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
 
     // Helper to try with different API versions since some preview models are only available in specific versions
     const tryWithApiVersion = async (apiVersion: 'v1' | 'v1beta') => {
-      const client = new GoogleGenAI({ apiKey: params.apiKey, apiVersion });
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore - SDK type not available here
+      const client = new (GoogleGenAI as new (...args: unknown[]) => unknown)({ apiKey: params.apiKey, apiVersion });
 
       // Primary path for Gemini preview models: models.generateContent
-      if (client.models?.generateContent) {
-        const { createUserContent, createPartFromUri } = mod as any;
+      if ((client as Record<string, unknown>)?.models && (client as Record<string, unknown>).models && (client as Record<string, Record<string, unknown>>).models!.generateContent) {
+        const { createUserContent, createPartFromUri } = (m || {}) as Record<string, unknown>;
 
-        async function buildContents(): Promise<any[]> {
-          const parts: any[] = [];
+        type InlineData = { inlineData: { mimeType?: string; data: string } } | { inline_data: { mimeType?: string; data: string } };
+        type TextPart = { text: string };
+        type Part = InlineData | TextPart | unknown;
+
+        async function buildContents(): Promise<unknown[]> {
+          const parts: Part[] = [];
           parts.push(PROMPTS.imageOnlyDirective);
           if (params.prompt) {
             parts.push(params.prompt);
@@ -45,16 +51,21 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
             try {
               // Prefer files.upload + createPartFromUri per docs
               const file = await dataUrlToFile(params.referenceImageDataUrl, `ref.${(mimeType||'image/png').split('/')[1] || 'png'}`);
-              const uploaded = await client.files.upload({ file });
-              const p = createPartFromUri ? createPartFromUri(uploaded.uri, uploaded.mimeType) : { inlineData: { mimeType, data: base64 } };
+              const filesObj = (client as Record<string, unknown>).files as Record<string, unknown> | undefined;
+              const uploadFn = filesObj?.upload as ((arg: unknown) => Promise<unknown>) | undefined;
+              const uploaded = uploadFn ? await uploadFn({ file }) : undefined;
+              const up = uploaded as Record<string, unknown> | undefined;
+              const p = typeof createPartFromUri === 'function' && up?.uri
+                ? (createPartFromUri as (uri: unknown, mimeType: unknown) => unknown)(up.uri, up.mimeType)
+                : { inlineData: { mimeType, data: base64 } };
               parts.push(p);
             } catch {
               // Fallback to inlineData part
               parts.push({ inlineData: { mimeType: mimeType || "image/png", data: base64 } });
             }
           }
-          if (createUserContent) {
-            return [createUserContent(parts)];
+          if (typeof createUserContent === 'function') {
+            return [(createUserContent as (parts: unknown[]) => unknown)(parts)];
           }
           // Fallback shape if helpers missing
           return parts.map((p) => (typeof p === 'string' ? { text: p } : p));
@@ -62,16 +73,21 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
 
         const tryGenerateContent = async (model: string) => {
           const contents = await buildContents();
-          const req: any = { model, contents };
+          const req: Record<string, unknown> = { model, contents };
           // Do NOT set generationConfig here; some versions reject responseModalities/responseMimeType
-          const res = await client.models.generateContent(req);
-          const candidates = (res as any)?.candidates || (res as any)?.data?.candidates || [];
-          for (const cand of candidates) {
-            const parts = cand?.content?.parts || [];
-            for (const p of parts) {
-              const inline = p?.inlineData || p?.inline_data;
+          const modelsObj = (client as Record<string, unknown>).models as Record<string, unknown> | undefined;
+          const genContentFn = modelsObj?.generateContent as ((arg: unknown) => Promise<unknown>) | undefined;
+          const res = genContentFn ? await genContentFn(req) : undefined;
+          const r = res as Record<string, unknown> | undefined;
+          const candidates = (r?.candidates as unknown[]) || ((r?.data as Record<string, unknown> | undefined)?.candidates as unknown[]) || [];
+          for (const candItem of candidates) {
+            const cand = candItem as Record<string, unknown>;
+            const parts = ((cand?.content as Record<string, unknown> | undefined)?.parts as unknown[]) || [];
+            for (const pItem of parts) {
+              const p = pItem as Record<string, unknown>;
+              const inline = (p.inlineData as { mimeType?: string; data?: string } | undefined) || (p.inline_data as { mimeType?: string; data?: string } | undefined);
               if (inline?.data) {
-                const mt = inline?.mimeType || "image/png";
+                const mt = inline.mimeType || "image/png";
                 return { dataUrl: `data:${mt};base64,${inline.data}` };
               }
             }
@@ -85,8 +101,8 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
             prompt: params.prompt,
             size: params.size,
           });
-        } catch (err: any) {
-          const msg = String(err?.message || err);
+        } catch (err: unknown) {
+          const msg = String((err as { message?: string })?.message || err);
           const is404 = msg.includes("404") || msg.includes("NOT_FOUND") || msg.toLowerCase().includes("not found");
           if (is404) {
             const fallbacks = dedupe([
@@ -104,29 +120,36 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
                   prompt: params.prompt,
                   size: params.size,
                 });
-              } catch (_) {
+              } catch {
                 // try next
               }
             }
           }
           // If generateContent failed for other reasons, try generateImages as a secondary path (server-only; predict CORS blocks in browser)
-          if (!isBrowser && client.models?.generateImages) {
+          if (!isBrowser && (client as Record<string, unknown>).models && ((client as Record<string, unknown>).models as Record<string, unknown>).generateImages) {
             try {
-              const res = await withRetries(() => client.models.generateImages({ model: params.model, prompt: params.prompt }), {
+              const modelsObj = (client as Record<string, unknown>).models as Record<string, unknown>;
+              const genImagesFn = modelsObj.generateImages as ((arg: unknown) => Promise<unknown>) | undefined;
+              const res = await withRetries(() => genImagesFn ? genImagesFn({ model: params.model, prompt: params.prompt }) : Promise.reject(new Error('generateImages not available')), {
                 preferPlaceholderOn429: params.preferPlaceholderOn429,
                 prompt: params.prompt,
                 size: params.size,
               });
+              const rr = res as Record<string, unknown> | undefined;
+              const dataArr = Array.isArray(rr?.data) ? (rr!.data as unknown[]) : [];
+              const imagesArr = Array.isArray(rr?.images) ? (rr!.images as unknown[]) : [];
+              const d0 = dataArr[0] as Record<string, unknown> | undefined;
+              const i0 = imagesArr[0] as Record<string, unknown> | undefined;
               const candidate =
-                res?.data?.[0]?.b64Data ||
-                res?.data?.[0]?.image?.base64Data ||
-                res?.images?.[0]?.b64Data ||
-                res?.images?.[0]?.image?.base64Data;
+                (d0?.b64Data as string | undefined) ||
+                ((d0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined) ||
+                (i0?.b64Data as string | undefined) ||
+                ((i0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined);
               if (!candidate || typeof candidate !== "string") {
                 throw new Error("Image generation returned no image data");
               }
               return { dataUrl: `data:image/png;base64,${candidate}` };
-            } catch (_) {
+            } catch {
               // continue to throw original error
             }
           }
@@ -135,17 +158,24 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
       }
 
       // Secondary: models.generateImages if present and generateContent not available (server-only)
-      if (!isBrowser && client.models?.generateImages) {
-        const res = await withRetries(() => client.models.generateImages({ model: params.model, prompt: params.prompt }), {
+      if (!isBrowser && (client as Record<string, unknown>).models && ((client as Record<string, unknown>).models as Record<string, unknown>).generateImages) {
+        const modelsObj = (client as Record<string, unknown>).models as Record<string, unknown>;
+        const genImagesFn = modelsObj.generateImages as ((arg: unknown) => Promise<unknown>) | undefined;
+        const res = await withRetries(() => genImagesFn ? genImagesFn({ model: params.model, prompt: params.prompt }) : Promise.reject(new Error('generateImages not available')), {
           preferPlaceholderOn429: params.preferPlaceholderOn429,
           prompt: params.prompt,
           size: params.size,
         });
+        const rr = res as Record<string, unknown> | undefined;
+        const dataArr = Array.isArray(rr?.data) ? (rr!.data as unknown[]) : [];
+        const imagesArr = Array.isArray(rr?.images) ? (rr!.images as unknown[]) : [];
+        const d0 = dataArr[0] as Record<string, unknown> | undefined;
+        const i0 = imagesArr[0] as Record<string, unknown> | undefined;
         const candidate =
-          res?.data?.[0]?.b64Data ||
-          res?.data?.[0]?.image?.base64Data ||
-          res?.images?.[0]?.b64Data ||
-          res?.images?.[0]?.image?.base64Data;
+          (d0?.b64Data as string | undefined) ||
+          ((d0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined) ||
+          (i0?.b64Data as string | undefined) ||
+          ((i0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined);
         if (!candidate || typeof candidate !== "string") {
           throw new Error("Image generation returned no image data");
         }
@@ -153,23 +183,30 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
       }
 
       // Legacy fallback (server-only)
-      if (!isBrowser && client.images?.generate) {
-        const res = await withRetries(() => client.images.generate({
+      if (!isBrowser && (client as Record<string, unknown>).images && ((client as Record<string, unknown>).images as Record<string, unknown>).generate) {
+        const imagesObj = (client as Record<string, unknown>).images as Record<string, unknown>;
+        const generateFn = imagesObj.generate as ((arg: unknown) => Promise<unknown>) | undefined;
+        const res = await withRetries(() => generateFn ? generateFn({
           model: params.model,
           prompt: params.prompt,
           image: params.referenceImageDataUrl,
           inputImage: params.referenceImageDataUrl,
           size: params.size,
-        }), {
+        }) : Promise.reject(new Error('images.generate not available')), {
           preferPlaceholderOn429: params.preferPlaceholderOn429,
           prompt: params.prompt,
           size: params.size,
         });
+        const rr = res as Record<string, unknown> | undefined;
+        const dataArr = Array.isArray(rr?.data) ? (rr!.data as unknown[]) : [];
+        const imagesArr = Array.isArray(rr?.images) ? (rr!.images as unknown[]) : [];
+        const d0 = dataArr[0] as Record<string, unknown> | undefined;
+        const i0 = imagesArr[0] as Record<string, unknown> | undefined;
         const candidate =
-          res?.data?.[0]?.b64Data ||
-          res?.data?.[0]?.image?.base64Data ||
-          res?.images?.[0]?.b64Data ||
-          res?.images?.[0]?.image?.base64Data;
+          (d0?.b64Data as string | undefined) ||
+          ((d0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined) ||
+          (i0?.b64Data as string | undefined) ||
+          ((i0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined);
         if (!candidate || typeof candidate !== "string") {
           throw new Error("Image generation returned no image data");
         }
@@ -181,11 +218,11 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
 
     // Try API versions in best-guess order, then REST fallback
     const order: Array<'v1' | 'v1beta'> = prefersV1beta ? (isBrowser ? ['v1beta'] : ['v1beta', 'v1']) : ['v1', 'v1beta'];
-    let lastErr: any;
+    let lastErr: unknown;
     for (const ver of order) {
       try {
         return await tryWithApiVersion(ver);
-      } catch (e: any) {
+      } catch (e: unknown) {
         lastErr = e;
         // continue
       }
@@ -217,25 +254,33 @@ function parseDataUrl(dataUrl: string): { mimeType?: string; base64: string } {
   return { mimeType: "image/png", base64: dataUrl };
 }
 
+async function dataUrlToFile(dataUrl: string, filename: string): Promise<File> {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  if (typeof File !== 'undefined') {
+    return new File([blob], filename, { type: blob.type });
+  }
+  throw new Error('File constructor not available');
+}
+
 async function withRetries<T>(
   fn: () => Promise<T>,
   opts?: { preferPlaceholderOn429?: boolean; prompt?: string; size?: string },
   maxAttempts = 3
 ): Promise<T> {
   let attempt = 0;
-  let lastErr: any;
+  let lastErr: unknown;
   while (attempt < maxAttempts) {
     try {
       return await fn();
-    } catch (err: any) {
+    } catch (err: unknown) {
       lastErr = err;
       const info = extractRetryInfo(err);
       if (!info.shouldRetry) break;
       if (opts?.preferPlaceholderOn429 && info.delayMs >= 10000) {
         // Prefer immediate placeholder instead of waiting a long time
         const dataUrl = await renderPlaceholderPng(opts?.prompt || "", opts?.size);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return { dataUrl } as any;
+        return { dataUrl } as unknown as T;
       }
       await sleep(info.delayMs);
       attempt++;
@@ -244,14 +289,19 @@ async function withRetries<T>(
   throw lastErr;
 }
 
-function extractRetryInfo(err: any): { shouldRetry: boolean; delayMs: number } {
-  const msg = String(err?.message || "").toLowerCase();
-  const is429 = msg.includes("429") || msg.includes("resource_exhausted") || err?.status === 429 || err?.code === 429;
+function extractRetryInfo(err: unknown): { shouldRetry: boolean; delayMs: number } {
+  const e = err as Record<string, unknown> | undefined;
+  const msg = String((e?.message as string) || "").toLowerCase();
+  const is429 = msg.includes("429") || msg.includes("resource_exhausted") || (e?.status === 429) || (e?.code === 429);
   if (!is429) return { shouldRetry: false, delayMs: 0 };
   // Try parse retry delay hints
   let delayMs = 3000;
-  const retryInfo = (err?.error?.details || err?.details || []).find((d: any) => (d?.['@type'] || '').toString().toLowerCase().includes('retryinfo'));
-  const raw = retryInfo?.retryDelay || retryInfo?.retry_delay || retryInfo?.retry_after;
+  const details = ((e?.error as Record<string, unknown> | undefined)?.details || (e?.details as unknown[])) as unknown[] | undefined;
+  const retryInfo = (details || []).find((d: unknown) => {
+    const t = (d as Record<string, unknown>)?.['@type'];
+    return String(t || '').toLowerCase().includes('retryinfo');
+  }) as Record<string, unknown> | undefined;
+  const raw = (retryInfo?.retryDelay || retryInfo?.retry_delay || retryInfo?.retry_after) as string | undefined;
   if (typeof raw === 'string' && raw.endsWith('s')) {
     const n = parseFloat(raw.slice(0, -1));
     if (isFinite(n) && n > 0) delayMs = Math.round(n * 1000);
@@ -272,8 +322,8 @@ async function restGenerateContentImage(
   versions: Array<'v1' | 'v1beta'> = ['v1', 'v1beta']
 ): Promise<{ dataUrl: string }> {
   const modelPath = model.startsWith('models/') ? model : `models/${model}`;
-  const contents: any[] = [];
-  const parts: any[] = [];
+  const contents: unknown[] = [];
+  const parts: Array<{ text?: string } | { inlineData?: { mimeType?: string; data: string } }> = [];
   const { PROMPTS } = await import("@/lib/config");
   parts.push({ text: PROMPTS.imageOnlyDirective });
   if (prompt) parts.push({ text: prompt });
@@ -281,8 +331,8 @@ async function restGenerateContentImage(
     const { mimeType, base64 } = parseDataUrl(referenceImageDataUrl);
     parts.push({ inlineData: { mimeType: mimeType || 'image/png', data: base64 } });
   }
-  contents.push({ role: 'user', parts });
-  const body: any = { contents };
+  contents.push({ role: 'user', parts } as unknown);
+  const body: Record<string, unknown> = { contents };
 
   for (const v of versions) {
     const url = `https://generativelanguage.googleapis.com/${v}/${modelPath}:generateContent`;
@@ -296,18 +346,24 @@ async function restGenerateContentImage(
     });
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      let errorObj: any;
+      let errorObj: unknown;
       try { errorObj = JSON.parse(text); } catch { errorObj = { error: { message: text } }; }
-      throw Object.assign(new Error(errorObj?.error?.message || `HTTP ${res.status}`), { status: res.status, error: errorObj?.error || errorObj });
+      const err = errorObj as { error?: { message?: string } };
+      throw Object.assign(new Error(err?.error?.message || `HTTP ${res.status}`), { status: res.status, error: err?.error || errorObj });
     }
-    const json: any = await res.json();
-    const candidates = json?.candidates || [];
-    for (const cand of candidates) {
-      const p = (cand?.content?.parts || []).find((pp: any) => pp?.inlineData?.data || pp?.inline_data?.data);
-      if (p) {
-        const inline = p.inlineData || p.inline_data;
-        const mt = inline?.mimeType || 'image/png';
-        return { dataUrl: `data:${mt};base64,${inline.data}` };
+    const json: unknown = await res.json();
+    const candidates = (json as Record<string, unknown> | undefined)?.candidates as unknown[] || [];
+    for (const cand of candidates as Array<Record<string, unknown>>) {
+      const partsList = ((cand?.content as Record<string, unknown> | undefined)?.parts as unknown[]) || [];
+      let inlineFound: { mimeType?: string; data?: string } | undefined;
+      for (const pp of partsList) {
+        const pr = pp as Record<string, unknown>;
+        const inline = (pr.inlineData as { mimeType?: string; data?: string } | undefined) || (pr.inline_data as { mimeType?: string; data?: string } | undefined);
+        if (inline?.data) { inlineFound = inline; break; }
+      }
+      if (inlineFound?.data) {
+        const mt = inlineFound.mimeType || 'image/png';
+        return { dataUrl: `data:${mt};base64,${inlineFound.data}` };
       }
     }
   }

@@ -9,7 +9,7 @@ import { isValidConnectionByHandles } from '@/lib/ports'
 import { createsCycle } from '@/lib/graph'
 import { useEditorDocument } from './useEditorDocument'
 
-import type { Edge as RFEdge, Node as RFNode, Connection } from "@xyflow/react";
+import type { Edge as RFEdge, Node as RFNode, Connection, ReactFlowProps, IsValidConnection } from "@xyflow/react";
 import type { NodeData } from "@/lib/schemas";
 type FlowEdge = RFEdge;
 
@@ -17,8 +17,9 @@ export default function EditorClient({ id }: { id: string }) {
   const { doc, loading, error, dirty, setTitle, handleCanvasChange, addNode } = useEditorDocument(id);
 
   // Keep hooks before any conditional returns
-  const isValidConnection = useCallback(
-    (conn: Connection) => {
+  const isValidConnection = useCallback<IsValidConnection>(
+    (edgeOrConn) => {
+      const conn = edgeOrConn as Connection;
       if (!isValidConnectionByHandles(conn)) return false;
       const edges = (doc?.edges || []) as unknown as FlowEdge[];
       return !createsCycle(conn, edges);
@@ -77,8 +78,8 @@ export default function EditorClient({ id }: { id: string }) {
                 nodes={doc.nodes as unknown as RFNode<NodeData>[]}
                 edges={doc.edges as unknown as FlowEdge[]}
                 onChange={handleCanvasChange}
-                nodeTypes={nodeTypes as any}
-                isValidConnection={isValidConnection as any}
+                nodeTypes={nodeTypes as ReactFlowProps['nodeTypes']}
+                isValidConnection={isValidConnection}
               />
             </div>
           </div>

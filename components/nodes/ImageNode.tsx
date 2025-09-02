@@ -1,10 +1,11 @@
 "use client";
 
-import { Position, type NodeProps, useNodeId, useReactFlow } from "@xyflow/react";
+import { Position, type NodeProps, useNodeId, useReactFlow, type Node as RFNode } from "@xyflow/react";
 import { makeHandleId } from "@/lib/ports";
 import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle, BaseNodeContent } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
 import type { ImageNodeData } from "@/lib/schemas";
+import Image from "next/image";
 
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
@@ -30,7 +31,7 @@ async function urlToPngDataUrl(url: string): Promise<string> {
   return imageBitmapToPngDataUrl(bitmap);
 }
 
-export default function ImageNode({ data }: NodeProps<ImageNodeData>) {
+export default function ImageNode({ data }: NodeProps<RFNode<ImageNodeData>>) {
   const nodeId = useNodeId();
   const { setNodes } = useReactFlow();
 
@@ -68,7 +69,7 @@ export default function ImageNode({ data }: NodeProps<ImageNodeData>) {
 
   const imageDataUrl: string | undefined = data?.imageDataUrl;
   const filename: string | undefined = data?.filename;
-  const error: string | undefined = (data as any)?.error;
+  const error: string | undefined = data?.error;
 
   return (
     <BaseNode className="min-w-64">
@@ -127,9 +128,12 @@ export default function ImageNode({ data }: NodeProps<ImageNodeData>) {
             <div className="text-xs text-gray-500 mb-1 truncate" title={filename || "image.png"}>
               {filename || "image.png"}
             </div>
-            <img
+            <Image
               src={imageDataUrl}
               alt={filename || "image"}
+              width={240}
+              height={180}
+              unoptimized
               className="max-w-[240px] max-h-[180px] rounded-md border border-black/10 dark:border-white/10"
             />
             <div className="mt-2 flex gap-2">
