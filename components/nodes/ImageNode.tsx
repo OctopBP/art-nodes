@@ -128,14 +128,16 @@ export default function ImageNode({ data }: NodeProps<RFNode<ImageNodeData>>) {
             <div className="text-xs text-gray-500 mb-1 truncate" title={filename || "image.png"}>
               {filename || "image.png"}
             </div>
-            <Image
-              src={imageDataUrl}
-              alt={filename || "image"}
-              width={240}
-              height={180}
-              unoptimized
-              className="max-w-[240px] max-h-[180px] rounded-md border border-black/10 dark:border-white/10"
-            />
+            <div className="relative w-[240px] h-[180px] rounded-md border border-black/10 dark:border-white/10">
+              <Image
+                src={imageDataUrl}
+                alt={filename || "image"}
+                fill
+                sizes="240px"
+                unoptimized
+                className="object-contain"
+              />
+            </div>
             <div className="mt-2 flex gap-2">
               <button
                 className="nodrag nopan rounded-md border border-black/10 dark:border-white/10 px-2 py-1 text-xs hover:bg-black/5 dark:hover:bg-white/5"
