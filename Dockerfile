@@ -22,7 +22,8 @@ WORKDIR /app
 
 # Install deps in builder to avoid relying on cached deps layer edge cases
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# Install both prod and dev deps to ensure TypeScript is available for next.config.ts
+RUN npm ci --no-audit --no-fund --include=dev
 
 # Copy sources and build
 COPY . .
