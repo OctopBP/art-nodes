@@ -9,6 +9,7 @@ export type GenerateImageParams = {
   referenceImageDataUrl?: string; // optional image conditioning
   size?: `${number}x${number}`; // hint/resolution, if supported by the model
   preferPlaceholderOn429?: boolean; // if true, don't wait long retry; return placeholder
+  preferImagesApi?: boolean; // if true and server-side, try Images API first
 };
 
 export async function generateImage(params: GenerateImageParams): Promise<{ dataUrl: string }> {
@@ -31,6 +32,34 @@ export async function generateImage(params: GenerateImageParams): Promise<{ data
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore - SDK type not available here
       const client = new (GoogleGenAI as new (...args: unknown[]) => unknown)({ apiKey: params.apiKey, apiVersion });
+
+      // If on server and caller prefers Images API, try it first
+      if (!isBrowser && params.preferImagesApi && (client as Record<string, unknown>).models && ((client as Record<string, unknown>).models as Record<string, unknown>).generateImages) {
+        const modelsObj = (client as Record<string, unknown>).models as Record<string, unknown>;
+        const genImagesFn = modelsObj.generateImages as ((arg: unknown) => Promise<unknown>) | undefined;
+        try {
+          const res = await withRetries(() => genImagesFn ? genImagesFn({ model: params.model, prompt: params.prompt, size: params.size }) : Promise.reject(new Error('generateImages not available')), {
+            preferPlaceholderOn429: params.preferPlaceholderOn429,
+            prompt: params.prompt,
+            size: params.size,
+          });
+          const rr = res as Record<string, unknown> | undefined;
+          const dataArr = Array.isArray(rr?.data) ? (rr!.data as unknown[]) : [];
+          const imagesArr = Array.isArray(rr?.images) ? (rr!.images as unknown[]) : [];
+          const d0 = dataArr[0] as Record<string, unknown> | undefined;
+          const i0 = imagesArr[0] as Record<string, unknown> | undefined;
+          const candidate =
+            (d0?.b64Data as string | undefined) ||
+            ((d0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined) ||
+            (i0?.b64Data as string | undefined) ||
+            ((i0?.image as Record<string, unknown> | undefined)?.base64Data as string | undefined);
+          if (candidate && typeof candidate === 'string') {
+            return { dataUrl: `data:image/png;base64,${candidate}` };
+          }
+        } catch {
+          // fall through to generateContent path
+        }
+      }
 
       // Primary path for Gemini preview models: models.generateContent
       if ((client as Record<string, unknown>)?.models && (client as Record<string, unknown>).models && (client as Record<string, Record<string, unknown>>).models!.generateContent) {

@@ -168,14 +168,40 @@ export default function GenerateNode({
                 )
               )
               try {
-                const { dataUrl } = await generateImage({
-                  apiKey,
-                  model,
-                  prompt,
-                  referenceImageDataUrl: refImg,
-                  size: currentSize as `${number}x${number}`,
-                  preferPlaceholderOn429,
-                })
+                // Prefer server route (can use Images API to honor size)
+                let dataUrl: string | undefined
+                try {
+                  const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      apiKey, // falls back to server env if omitted; sending keeps current UX
+                      model,
+                      prompt,
+                      referenceImageDataUrl: refImg,
+                      size: currentSize,
+                      preferPlaceholderOn429,
+                    }),
+                  })
+                  if (res.ok) {
+                    const json = (await res.json()) as { dataUrl?: string }
+                    dataUrl = json?.dataUrl
+                  } else {
+                    throw new Error('API route failed')
+                  }
+                } catch {
+                  // Fallback to client-side SDK path (may ignore size)
+                  const r = await generateImage({
+                    apiKey,
+                    model,
+                    prompt,
+                    referenceImageDataUrl: refImg,
+                    size: currentSize as `${number}x${number}`,
+                    preferPlaceholderOn429,
+                  })
+                  dataUrl = r.dataUrl
+                }
+                if (!dataUrl) throw new Error('No image data returned')
                 setNodes((ns) =>
                   ns.map((n) =>
                     n.id === nodeId
@@ -184,7 +210,7 @@ export default function GenerateNode({
                           data: {
                             ...n.data,
                             status: 'done',
-                            outputImageDataUrl: dataUrl,
+                            outputImageDataUrl: dataUrl!,
                             lastInputsHash: signature,
                             size: currentSize,
                           },
