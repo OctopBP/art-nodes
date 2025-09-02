@@ -1,55 +1,32 @@
-# Multi-stage Dockerfile for Next.js (Node 20 LTS)
+## Simplest single-stage Dockerfile for Next.js (Node 20)
+## Builds and runs the app with npm, no multi-stage/standalone.
 
-# 1) Base dependencies for building
-FROM node:20-bookworm-slim AS deps
-ENV NODE_ENV=development \
-    NEXT_TELEMETRY_DISABLED=1 \
+FROM node:20-bookworm-slim
+
+# Avoid npm audit/fund noise and disable Next telemetry
+ENV NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false
+
 WORKDIR /app
 
-# Install dependencies only (leverages Docker layer caching)
+# Install dependencies (includes devDependencies so TypeScript is available)
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
-# 2) Builder: compile the Next.js application
-FROM node:20-bookworm-slim AS builder
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    NPM_CONFIG_AUDIT=false \
-    NPM_CONFIG_FUND=false
-WORKDIR /app
-
-# Install deps in builder to avoid relying on cached deps layer edge cases
-COPY package.json package-lock.json ./
-# Install both prod and dev deps to ensure TypeScript is available for next.config.ts
-RUN npm ci --no-audit --no-fund --include=dev
-
-# Copy sources and build
+# Copy source and build
 COPY . .
 RUN npm run build
 
-# 3) Runner: minimal production image
-FROM node:20-bookworm-slim AS runner
+# Production runtime env
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0
-WORKDIR /app
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
 
-# Copy standalone server and static assets
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
-# Run as non-root user for security
+# Run as non-root
 USER node
 
-# Expose the Next.js port
 EXPOSE 3000
 
-# Healthcheck (optional but recommended)
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD node -e "const p=process.env.PORT||3000; fetch('http://127.0.0.1:'+p).then(r=>{if(r.status<500)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))" || exit 1
-
-# Start the standalone server
-CMD ["node", "server.js"]
+# Start Next.js
+CMD ["npm", "start"]
