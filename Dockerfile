@@ -14,16 +14,18 @@ RUN npm ci --no-audit --no-fund
 
 # 2) Builder: compile the Next.js application
 FROM node:20-bookworm-slim AS builder
-ENV NODE_ENV=development \
+ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Install deps in builder to avoid relying on cached deps layer edge cases
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-# Build the app (Next standalone output)
+# Copy sources and build
+COPY . .
 RUN npm run build
 
 # 3) Runner: minimal production image
