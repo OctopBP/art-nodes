@@ -39,7 +39,11 @@ export const ZCombineNodeData = z.object({
 export const ZGenerateNodeData = z.object({
   kind: z.literal("generate"),
   model: z.string().optional(),
-  size: z.enum(["512x512", "768x768", "1024x1024"]).optional(),
+  // Allow arbitrary WxH size strings like "1024x768"
+  size: z
+    .string()
+    .regex(/^\d+x\d+$/)
+    .optional(),
   status: z.enum(["idle", "loading", "done", "error"]).default("idle"),
   outputImageDataUrl: z
     .string()

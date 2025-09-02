@@ -24,7 +24,6 @@ export function createDefaultNodeData(type: NodeTypeKey): NodeData {
     case "combine":
       return { kind: "combine" } as NodeData;
     case "generate":
-      return { kind: "generate", status: "idle" } as NodeData;
+      return { kind: "generate", status: "idle", size: "1024x1024" } as NodeData;
   }
 }
-

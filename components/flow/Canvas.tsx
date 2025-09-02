@@ -40,6 +40,7 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
   const nodesRef = useRef<Node[]>(rfNodes);
   const edgesRef = useRef<Edge[]>(rfEdges);
   const shouldEmitRef = useRef(false);
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -64,7 +65,9 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setRfNodes((prev) => {
       const next = applyNodeChanges(changes, prev);
-      shouldEmitRef.current = true;
+      // Avoid spamming external onChange while dragging positions
+      const hasPositionChange = changes.some((c) => c.type === 'position');
+      shouldEmitRef.current = !isDraggingRef.current || !hasPositionChange;
       return next;
     });
   }, [setRfNodes]);
@@ -101,6 +104,12 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDragStart={() => { isDraggingRef.current = true; }}
+        onNodeDragStop={() => {
+          isDraggingRef.current = false;
+          // Emit a single sync after drag completes
+          onChangeRef.current?.(nodesRef.current, edgesRef.current);
+        }}
         fitView
         nodeTypes={nodeTypes}
         isValidConnection={isValidConnection}

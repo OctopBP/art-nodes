@@ -16,7 +16,7 @@ export function useEditorDocument(id: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
-  const saveTimer = useRef<NodeJS.Timeout | null>(null);
+  const [saving, setSaving] = useState(false);
   const lastSigRef = useRef<string | null>(null);
 
   const makeSig = useCallback((nodes: FlowNode[], edges: FlowEdge[]): string => {
@@ -66,18 +66,19 @@ export function useEditorDocument(id: string) {
     })();
     return () => {
       mounted = false;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [get, id]);
 
-  useEffect(() => {
-    if (!doc || !dirty) return;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
+  const saveNow = useCallback(async () => {
+    if (!doc) return;
+    setSaving(true);
+    try {
       await save(doc);
       setDirty(false);
-    }, 500);
-  }, [doc, dirty, save]);
+    } finally {
+      setSaving(false);
+    }
+  }, [doc, save]);
 
   const handleCanvasChange = useCallback((nodes: FlowNode[], edges: FlowEdge[]) => {
     const toSchemaNode = (n: FlowNode): SchemaRFNode => {
@@ -124,5 +125,5 @@ export function useEditorDocument(id: string) {
     setDirty(true);
   }, [doc]);
 
-  return { doc, setDoc, loading, error, dirty, setDirty, handleCanvasChange, addNode, setTitle } as const;
+  return { doc, setDoc, loading, error, dirty, saving, setDirty, handleCanvasChange, addNode, setTitle, saveNow } as const;
 }

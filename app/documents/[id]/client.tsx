@@ -14,7 +14,7 @@ import type { NodeData } from "@/lib/schemas";
 type FlowEdge = RFEdge;
 
 export default function EditorClient({ id }: { id: string }) {
-  const { doc, loading, error, dirty, setTitle, handleCanvasChange, addNode } = useEditorDocument(id);
+  const { doc, loading, error, dirty, saving, setTitle, handleCanvasChange, addNode, saveNow } = useEditorDocument(id);
 
   // Keep hooks before any conditional returns
   const isValidConnection = useCallback<IsValidConnection>(
@@ -64,9 +64,20 @@ export default function EditorClient({ id }: { id: string }) {
             onChange={(e) => setTitle(e.target.value)}
             className="text-lg font-medium bg-transparent outline-none rounded-md px-2 py-1 border border-transparent focus:border-black/10 dark:focus:border-white/10"
           />
-          <div className="text-xs text-gray-500">{dirty ? "Saving…" : "Saved"}</div>
+          <div className="text-xs text-gray-500">
+            {saving ? "Saving…" : dirty ? "Unsaved changes" : "Saved"}
+          </div>
         </div>
-        <div className="text-sm text-gray-500">Document ID: {doc.id}</div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={saveNow}
+            disabled={!dirty || saving}
+            className="px-3 py-1 text-sm rounded-md border border-black/10 dark:border-white/10 disabled:opacity-50"
+          >
+            Save
+          </button>
+          <div className="text-sm text-gray-500">Document ID: {doc.id}</div>
+        </div>
       </div>
 
       <div className="h-[calc(100vh-56px)] relative">

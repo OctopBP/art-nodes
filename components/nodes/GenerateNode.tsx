@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
     BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle
 } from '@/components/base-node'
@@ -21,48 +21,55 @@ export default function GenerateNode({
 }: NodeProps<RFNode<GenerateNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
-  const nodes = useStore((s) => s.nodes) as unknown as RFNode<NodeData>[]
-  const edges = useStore((s) => s.edges)
-
-  const inputs = useMemo(() => {
-    if (!nodeId)
-      return {
-        text: undefined as string | undefined,
-        combined: undefined as
-          | { text?: string; imageDataUrl?: string }
-          | undefined,
-      }
-    const incoming = edges.filter((e) => e.target === nodeId)
-    let text: string | undefined
-    let combined: { text?: string; imageDataUrl?: string } | undefined
-    for (const e of incoming) {
-      const src = nodes.find((n) => n.id === e.source)
-      if (!src) continue
-      const d = src.data as NodeData | undefined
-      if (!d) continue
-      if (e.targetHandle?.endsWith(':string')) {
-        if (d.kind === 'text') {
-          text = d.text ?? text
-        } else if (d.kind === 'combine') {
-          text = d.combined?.text ?? text
+  const inputs = useStore(
+    (s) => {
+      if (!nodeId)
+        return {
+          text: undefined as string | undefined,
+          combined: undefined as { text?: string; imageDataUrl?: string } | undefined,
         }
-      } else if (e.targetHandle?.endsWith(':combined')) {
-        if (d.kind === 'combine') {
-          combined = {
-            text: d.combined?.text,
-            imageDataUrl: d.combined?.imageDataUrl,
+      const incoming = s.edges.filter((e) => e.target === nodeId)
+      let text: string | undefined
+      let combined: { text?: string; imageDataUrl?: string } | undefined
+      for (const e of incoming) {
+        const src = s.nodes.find((n) => n.id === e.source)
+        const d = src?.data as NodeData | undefined
+        if (!d) continue
+        if (e.targetHandle?.endsWith(':string')) {
+          if (d.kind === 'text') {
+            text = d.text ?? text
+          } else if (d.kind === 'combine') {
+            text = d.combined?.text ?? text
+          }
+        } else if (e.targetHandle?.endsWith(':combined')) {
+          if (d.kind === 'combine') {
+            combined = {
+              text: d.combined?.text,
+              imageDataUrl: d.combined?.imageDataUrl,
+            }
           }
         }
       }
-    }
-    return { text, combined }
-  }, [edges, nodes, nodeId])
+      return { text, combined }
+    },
+    (a, b) => a.text === b.text && a.combined?.text === b.combined?.text && a.combined?.imageDataUrl === b.combined?.imageDataUrl
+  )
 
   const outputImageDataUrl: string | undefined = data?.outputImageDataUrl
   const lastInputsHash: string | undefined = data?.lastInputsHash
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const ready = Boolean(inputs.text) || Boolean(inputs.combined?.text)
+  const currentSize = (data as GenerateNodeData | undefined)?.size || '1024x1024'
+
+  const setSize = (size: string) => {
+    if (!nodeId) return
+    setNodes((ns) =>
+      ns.map((n) =>
+        n.id === nodeId ? { ...n, data: { ...(n.data as NodeData), size } } : n
+      )
+    )
+  }
 
   const status = busy
     ? 'loading'
@@ -104,6 +111,22 @@ export default function GenerateNode({
           />
         </div>
         <BaseNodeContent className='space-y-2'>
+          <div className='flex items-center gap-2'>
+            <label className='text-[11px] text-foreground/70'>Aspect</label>
+            <select
+              className='rounded-md border border-black/10 dark:border-white/10 px-1.5 py-1 text-xs bg-transparent'
+              value={currentSize}
+              onChange={(e) => setSize(e.target.value)}
+              title='Aspect ratio (maps to WxH size)'
+            >
+              {/* Long side ~1024 to keep sizes sane */}
+              <option value='1024x1024'>1:1 (1024x1024)</option>
+              <option value='768x1024'>3:4 (768x1024)</option>
+              <option value='1024x768'>4:3 (1024x768)</option>
+              <option value='720x1280'>9:16 (720x1280)</option>
+              <option value='1280x720'>16:9 (1280x720)</option>
+            </select>
+          </div>
           <button
             className='rounded-md border border-black/10 dark:border-white/10 px-2 py-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-black/5 dark:hover:bg-white/5'
             disabled={!ready || busy}
@@ -125,7 +148,7 @@ export default function GenerateNode({
                 prompt,
                 refImg,
                 model,
-                size: '1024x1024',
+                size: currentSize,
               })
               if (
                 lastInputsHash &&
@@ -150,7 +173,7 @@ export default function GenerateNode({
                   model,
                   prompt,
                   referenceImageDataUrl: refImg,
-                  size: '1024x1024',
+                  size: currentSize as `${number}x${number}`,
                   preferPlaceholderOn429,
                 })
                 setNodes((ns) =>
@@ -163,6 +186,7 @@ export default function GenerateNode({
                             status: 'done',
                             outputImageDataUrl: dataUrl,
                             lastInputsHash: signature,
+                            size: currentSize,
                           },
                         }
                       : n
