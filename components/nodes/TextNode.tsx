@@ -1,4 +1,4 @@
-'use client'
+"use client"
 
 import { Trash } from 'lucide-react'
 import {
@@ -9,19 +9,43 @@ import { makeHandleId } from '@/lib/ports'
 import { type NodeProps, Position, useNodeId, useReactFlow, type Node as RFNode } from '@xyflow/react'
 import type { TextNodeData } from '@/lib/schemas'
 import { Button } from '../ui/button'
+import { useEffect, useRef, useState, startTransition } from 'react'
 
 export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
+  const [value, setValue] = useState<string>(data?.text ?? '')
+  const debounceRef = useRef<number | null>(null)
 
-  const onChange = (value: string) => {
+  // keep local state in sync if external data changes (e.g., load, undo)
+  useEffect(() => {
+    const external = data?.text ?? ''
+    if (external !== value) setValue(external)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.text])
+
+  const flushToStore = (next: string) => {
     if (!nodeId) return
-    setNodes((nodes) =>
-      nodes.map((n) =>
-        n.id === nodeId ? { ...n, data: { ...n.data, text: value } } : n
+    startTransition(() => {
+      setNodes((nodes) =>
+        nodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, text: next } } : n
+        )
       )
-    )
+    })
   }
+
+  const scheduleFlush = (next: string) => {
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current)
+      debounceRef.current = null
+    }
+    debounceRef.current = window.setTimeout(() => flushToStore(next), 120)
+  }
+
+  useEffect(() => () => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current)
+  }, [])
 
   return (
     <BaseNode className='w-72'>
@@ -57,8 +81,13 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
           className='nodrag nopan w-full rounded-md border border-black/10 dark:border-white/10 bg-transparent px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20'
           rows={4}
           placeholder='Type prompt text...'
-          value={data?.text ?? ''}
-          onChange={(e) => onChange(e.target.value)}
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value
+            setValue(next)
+            scheduleFlush(next)
+          }}
+          onBlur={() => flushToStore(value)}
         />
       </BaseNodeContent>
     </BaseNode>
