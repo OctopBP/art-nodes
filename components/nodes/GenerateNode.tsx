@@ -14,6 +14,8 @@ import { useSettingsStore } from '@/store/settings'
 import {
     type Node as RFNode, type NodeProps, Position, useNodeId, useReactFlow, useStore
 } from '@xyflow/react'
+import { Trash } from 'lucide-react'
+import { Button } from '../ui/button'
 
 import type { GenerateNodeData, NodeData } from '@/lib/schemas'
 export default function GenerateNode({
@@ -84,6 +86,18 @@ export default function GenerateNode({
       <BaseNode className='min-w-64'>
         <BaseNodeHeader className='border-b'>
           <BaseNodeHeaderTitle>Generate</BaseNodeHeaderTitle>
+          <Button
+            variant='ghost'
+            className='nodrag p-1'
+            onClick={() => {
+              if (!nodeId) return
+              setNodes((ns) => ns.filter((n) => n.id !== nodeId))
+            }}
+            aria-label='Delete Node'
+            title='Delete Node'
+          >
+            <Trash className='size-4' />
+          </Button>
         </BaseNodeHeader>
         <div className='px-3 py-2 flex items-start justify-between gap-2'>
           <div className='flex flex-col gap-2'>

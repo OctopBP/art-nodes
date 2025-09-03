@@ -6,6 +6,8 @@ import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle, BaseNodeContent } from "
 import { LabeledHandle } from "@/components/labeled-handle";
 import type { ImageNodeData } from "@/lib/schemas";
 import Image from "next/image";
+import { Trash } from "lucide-react";
+import { Button } from "../ui/button";
 
 
 async function imageBitmapToPngDataUrl(bitmap: ImageBitmap): Promise<string> {
@@ -75,6 +77,18 @@ export default function ImageNode({ data }: NodeProps<RFNode<ImageNodeData>>) {
     <BaseNode className="min-w-64">
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Image</BaseNodeHeaderTitle>
+        <Button
+          variant="ghost"
+          className="nodrag p-1"
+          onClick={() => {
+            if (!nodeId) return;
+            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+          }}
+          aria-label="Delete Node"
+          title="Delete Node"
+        >
+          <Trash className="size-4" />
+        </Button>
       </BaseNodeHeader>
       <div className="px-3 py-2 flex justify-between">
         <div />

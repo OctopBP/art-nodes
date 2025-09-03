@@ -6,6 +6,8 @@ import { useEffect } from "react";
 import { BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle } from "@/components/base-node";
 import { LabeledHandle } from "@/components/labeled-handle";
 import type { CombineNodeData, Combined, NodeData } from "@/lib/schemas";
+import { Trash } from "lucide-react";
+import { Button } from "../ui/button";
 
 type CombineRuntimeData = CombineNodeData & { combined?: Combined };
 
@@ -75,6 +77,18 @@ export default function CombineNode({ data }: NodeProps<RFNode<CombineRuntimeDat
     <BaseNode className="min-w-56">
       <BaseNodeHeader className="border-b">
         <BaseNodeHeaderTitle>Combine</BaseNodeHeaderTitle>
+        <Button
+          variant="ghost"
+          className="nodrag p-1"
+          onClick={() => {
+            if (!nodeId) return;
+            setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+          }}
+          aria-label="Delete Node"
+          title="Delete Node"
+        >
+          <Trash className="size-4" />
+        </Button>
       </BaseNodeHeader>
       <div className="px-3 py-2 flex items-start justify-between gap-2">
         <div className="flex flex-col gap-2">
