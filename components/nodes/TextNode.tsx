@@ -9,9 +9,9 @@ import { makeHandleId } from '@/lib/ports'
 import { type NodeProps, Position, useNodeId, useReactFlow, type Node as RFNode } from '@xyflow/react'
 import type { TextNodeData } from '@/lib/schemas'
 import { Button } from '../ui/button'
-import { useEffect, useState, startTransition } from 'react'
+import { memo, useEffect, useState, startTransition } from 'react'
 
-export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
+function TextNodeImpl({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
   const [value, setValue] = useState<string>(data?.text ?? '')
@@ -74,10 +74,19 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
           rows={4}
           placeholder='Type prompt text...'
           value={value}
+          autoComplete='off'
+          autoCorrect='off'
+          spellCheck={false}
+          onPointerDown={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             const next = e.target.value
             setValue(next)
             // no-op: do not write to store while typing
+          }}
+          onInput={(e) => {
+            const next = (e.target as HTMLTextAreaElement).value
+            if (next !== value) setValue(next)
           }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => { flushToStore(value); setIsFocused(false) }}
@@ -92,3 +101,12 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
     </BaseNode>
   )
 }
+
+const TextNode = memo(TextNodeImpl, (prev, next) => {
+  // While focused, ignore prop changes to avoid interrupting typing
+  const prevText = (prev.data?.text ?? '')
+  const nextText = (next.data?.text ?? '')
+  return prevText === nextText
+})
+
+export default TextNode
