@@ -15,13 +15,16 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
   const [value, setValue] = useState<string>(data?.text ?? '')
+  const [isFocused, setIsFocused] = useState(false)
 
   // keep local state in sync if external data changes (e.g., load, undo)
+  // but never overwrite while the user is actively typing in this field
   useEffect(() => {
+    if (isFocused) return
     const external = data?.text ?? ''
     if (external !== value) setValue(external)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.text])
+  }, [data?.text, isFocused])
 
   const flushToStore = (next: string) => {
     if (!nodeId) return
@@ -76,7 +79,8 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
             setValue(next)
             // no-op: do not write to store while typing
           }}
-          onBlur={() => flushToStore(value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => { flushToStore(value); setIsFocused(false) }}
           onKeyDown={(e) => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
               e.preventDefault()
