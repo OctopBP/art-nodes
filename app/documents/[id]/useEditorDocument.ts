@@ -109,12 +109,12 @@ export function useEditorDocument(id: string) {
     setDirty(true);
   }, [makeSig]);
 
-  const addNode = useCallback((type: NodeTypeKey) => {
+  const addNode = useCallback((type: NodeTypeKey, position?: { x: number; y: number }) => {
     if (!doc) return;
     const idStr = nanoid(8);
-    const position = { x: 200 + doc.nodes.length * 40, y: 120 + doc.nodes.length * 20 };
+    const pos = position ?? { x: 200 + doc.nodes.length * 40, y: 120 + doc.nodes.length * 20 };
     const data = createDefaultNodeData(type);
-    const node: SchemaRFNode = { id: idStr, type, position, data };
+    const node: SchemaRFNode = { id: idStr, type, position: pos, data };
     setDoc({ ...doc, nodes: [...doc.nodes, node] });
     setDirty(true);
   }, [doc]);

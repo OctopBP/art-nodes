@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useCallback } from 'react'
 import Canvas from '@/components/flow/Canvas'
 import { nodeTypes } from '@/components/flow/nodeRegistry'
-import { AddNodeToolbar } from '@/components/flow/AddNodeToolbar'
 import { isValidConnectionByHandles } from '@/lib/ports'
 import { createsCycle } from '@/lib/graph'
 import { useEditorDocument } from './useEditorDocument'
@@ -82,7 +81,6 @@ export default function EditorClient({ id }: { id: string }) {
 
       <div className="h-[calc(100vh-56px)] relative">
         <section className="relative w-full h-full">
-          <AddNodeToolbar onAdd={addNode} />
           <div className="absolute inset-0">
             <div className="w-full h-full">
               <Canvas
@@ -91,6 +89,7 @@ export default function EditorClient({ id }: { id: string }) {
                 onChange={handleCanvasChange}
                 nodeTypes={nodeTypes as ReactFlowProps['nodeTypes']}
                 isValidConnection={isValidConnection}
+                onAddNode={addNode}
               />
             </div>
           </div>
