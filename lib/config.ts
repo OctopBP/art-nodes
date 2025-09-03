@@ -3,6 +3,7 @@ export type ModelOption = { value: string; label: string };
 export const MODEL_OPTIONS: ModelOption[] = [
   { value: "gemini-2.5-flash-image-preview", label: "Gemini 2.5 Flash (image preview)" },
   { value: "gemini-2.0-flash-preview-image-generation", label: "Gemini 2.0 Flash (preview image generation)" },
+  { value: "imagen-3.0-generate-002", label: "Imagen 3 (non-square aspect support)" },
 ];
 
 export const DEFAULT_MODEL = MODEL_OPTIONS[0].value;
@@ -21,4 +22,3 @@ export const RATE_LIMIT = {
   maxAttempts: 3,
   defaultBackoffMs: 3000,
 };
-
