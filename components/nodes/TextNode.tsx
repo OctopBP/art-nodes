@@ -9,13 +9,12 @@ import { makeHandleId } from '@/lib/ports'
 import { type NodeProps, Position, useNodeId, useReactFlow, type Node as RFNode } from '@xyflow/react'
 import type { TextNodeData } from '@/lib/schemas'
 import { Button } from '../ui/button'
-import { useEffect, useRef, useState, startTransition } from 'react'
+import { useEffect, useState, startTransition } from 'react'
 
 export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
   const [value, setValue] = useState<string>(data?.text ?? '')
-  const debounceRef = useRef<number | null>(null)
 
   // keep local state in sync if external data changes (e.g., load, undo)
   useEffect(() => {
@@ -35,17 +34,7 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
     })
   }
 
-  const scheduleFlush = (next: string) => {
-    if (debounceRef.current) {
-      window.clearTimeout(debounceRef.current)
-      debounceRef.current = null
-    }
-    debounceRef.current = window.setTimeout(() => flushToStore(next), 180)
-  }
-
-  useEffect(() => () => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current)
-  }, [])
+  // Intentionally do not persist while typing; only on explicit events (blur/save)
 
   return (
     <BaseNode className='w-72'>
@@ -85,9 +74,15 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
           onChange={(e) => {
             const next = e.target.value
             setValue(next)
-            scheduleFlush(next)
+            // no-op: do not write to store while typing
           }}
           onBlur={() => flushToStore(value)}
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+              e.preventDefault()
+              flushToStore(value)
+            }
+          }}
         />
       </BaseNodeContent>
     </BaseNode>
