@@ -20,13 +20,14 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
 
-# Install only production deps
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --ignore-scripts
+# Optional: libc compatibility for native libs
+RUN apk add --no-cache libc6-compat
 
-# Copy built app
-COPY --from=builder /app/.next ./.next
+# Copy standalone server and static assets
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Use PORT from the environment (.env or docker --env-file)
@@ -36,5 +37,8 @@ ENV PORT=${PORT}
 
 EXPOSE ${PORT}
 
-CMD ["npm", "run", "start"]
+# Drop privileges
+USER node
 
+# Run standalone server
+CMD ["node", "server.js"]
