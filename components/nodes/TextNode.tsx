@@ -40,7 +40,7 @@ export default function TextNode({ data }: NodeProps<RFNode<TextNodeData>>) {
       window.clearTimeout(debounceRef.current)
       debounceRef.current = null
     }
-    debounceRef.current = window.setTimeout(() => flushToStore(next), 120)
+    debounceRef.current = window.setTimeout(() => flushToStore(next), 180)
   }
 
   useEffect(() => () => {

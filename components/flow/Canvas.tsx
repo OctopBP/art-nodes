@@ -65,9 +65,16 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setRfNodes((prev) => {
       const next = applyNodeChanges(changes, prev);
-      // Avoid spamming external onChange while dragging positions
+      // Only emit meaningful structural changes. Ignore dimension/selection churn and
+      // skip mid-drag position updates.
+      const hasMeaningfulChange = changes.some((c) =>
+        c.type === 'add' ||
+        c.type === 'remove' ||
+        c.type === 'replace' ||
+        c.type === 'position'
+      );
       const hasPositionChange = changes.some((c) => c.type === 'position');
-      shouldEmitRef.current = !isDraggingRef.current || !hasPositionChange;
+      shouldEmitRef.current = hasMeaningfulChange && (!isDraggingRef.current || !hasPositionChange);
       return next;
     });
   }, [setRfNodes]);
