@@ -1,6 +1,7 @@
 "use client";
 
 import CombineNode from "@/components/nodes/CombineNode";
+import AddTextNode from "@/components/nodes/AddTextNode";
 import GenerateNode from "@/components/nodes/GenerateNode";
 import ImageNode from "@/components/nodes/ImageNode";
 import TextNode from "@/components/nodes/TextNode";
@@ -10,6 +11,7 @@ export const nodeTypes = {
   text: TextNode,
   image: ImageNode,
   combine: CombineNode,
+  addText: AddTextNode,
   generate: GenerateNode,
 } as const;
 
@@ -23,6 +25,8 @@ export function createDefaultNodeData(type: NodeTypeKey): NodeData {
       return { kind: "image" } as NodeData;
     case "combine":
       return { kind: "combine" } as NodeData;
+    case "addText":
+      return { kind: "addText", text: "" } as NodeData;
     case "generate":
       return { kind: "generate", status: "idle", size: "1024x1024" } as NodeData;
   }

@@ -40,11 +40,11 @@ export default function GenerateNode({
         if (e.targetHandle?.endsWith(':string')) {
           if (d.kind === 'text') {
             text = d.text ?? text
-          } else if (d.kind === 'combine') {
+          } else if (d.kind === 'combine' || d.kind === 'addText') {
             text = d.combined?.text ?? text
           }
         } else if (e.targetHandle?.endsWith(':combined')) {
-          if (d.kind === 'combine') {
+          if (d.kind === 'combine' || d.kind === 'addText') {
             combined = {
               text: d.combined?.text,
               imageDataUrl: d.combined?.imageDataUrl,

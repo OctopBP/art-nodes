@@ -1,6 +1,6 @@
 "use client";
 
-import { GitMerge, Image as ImageIcon, Type, Wand2 } from "lucide-react";
+import { GitMerge, Image as ImageIcon, Type, Wand2, Plus } from "lucide-react";
 import type { NodeTypeKey } from "@/components/flow/nodeRegistry";
 
 export function AddNodeToolbar({ onAdd }: { onAdd: (type: NodeTypeKey) => void }) {
@@ -32,6 +32,17 @@ export function AddNodeToolbar({ onAdd }: { onAdd: (type: NodeTypeKey) => void }
       </button>
       <button
         className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
+        onClick={() => onAdd("addText")}
+        aria-label="Add Add text"
+        title="Add Add text"
+      >
+        <div className="relative">
+          <Type className="h-4 w-4" />
+          <Plus className="absolute -right-1 -bottom-1 h-3 w-3" />
+        </div>
+      </button>
+      <button
+        className="h-9 w-9 flex items-center justify-center rounded border border-white/10 bg-transparent hover:bg-white/10"
         onClick={() => onAdd("generate")}
         aria-label="Add generate"
         title="Add generate"
@@ -41,4 +52,3 @@ export function AddNodeToolbar({ onAdd }: { onAdd: (type: NodeTypeKey) => void }
     </div>
   );
 }
-

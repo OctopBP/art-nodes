@@ -36,6 +36,12 @@ export const ZCombineNodeData = z.object({
   combined: ZCombined.optional(),
 });
 
+export const ZAddTextNodeData = z.object({
+  kind: z.literal("addText"),
+  text: z.string().default(""),
+  combined: ZCombined.optional(),
+});
+
 export const ZGenerateNodeData = z.object({
   kind: z.literal("generate"),
   model: z.string().optional(),
@@ -59,6 +65,7 @@ export const ZNodeData = z.discriminatedUnion("kind", [
   ZTextNodeData,
   ZImageNodeData,
   ZCombineNodeData,
+  ZAddTextNodeData,
   ZGenerateNodeData,
 ]);
 
@@ -93,6 +100,7 @@ export type Combined = z.infer<typeof ZCombined>;
 export type TextNodeData = z.infer<typeof ZTextNodeData>;
 export type ImageNodeData = z.infer<typeof ZImageNodeData>;
 export type CombineNodeData = z.infer<typeof ZCombineNodeData>;
+export type AddTextNodeData = z.infer<typeof ZAddTextNodeData>;
 export type GenerateNodeData = z.infer<typeof ZGenerateNodeData>;
 export type NodeData = z.infer<typeof ZNodeData>;
 export type RFNode = z.infer<typeof ZRFNode>;
