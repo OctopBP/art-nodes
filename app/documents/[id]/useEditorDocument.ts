@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { nanoid } from "nanoid";
-import { useDocumentsStore } from "@/store/documents";
+import { nanoid } from 'nanoid'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { createDefaultNodeData, NodeTypeKey } from '@/components/flow/nodeRegistry'
+import { useDocumentsStore } from '@/store/documents'
+
 import type { DocumentT, NodeData, RFNode as SchemaRFNode, RFEdge as SchemaRFEdge } from "@/lib/schemas";
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
-import { createDefaultNodeData, type NodeTypeKey } from "@/components/flow/nodeRegistry";
-
 type FlowNode = RFNode;
 type FlowEdge = RFEdge;
 
@@ -20,6 +20,7 @@ export function useEditorDocument(id: string) {
   const lastSigRef = useRef<string | null>(null);
 
   const makeSig = useCallback((nodes: FlowNode[], edges: FlowEdge[]): string => {
+    // Use a more efficient signature calculation
     const nodeSig = nodes
       .map((n) => {
         const d = n.data as NodeData | undefined;
@@ -27,7 +28,7 @@ export function useEditorDocument(id: string) {
         const t = (d && 'text' in d && typeof d.text === 'string') ? (d.text as string) : '';
         const imgLen = (d && 'imageDataUrl' in d && typeof d.imageDataUrl === 'string') ? (d.imageDataUrl as string).length : 0;
         const outLen = (d && 'outputImageDataUrl' in d && typeof d.outputImageDataUrl === 'string') ? (d.outputImageDataUrl as string).length : 0;
-        return `${n.id}|${String(n.type ?? '')}|${n.position.x},${n.position.y}|${kind}|t:${t.length}|i:${imgLen}|o:${outLen}`;
+        return `${n.id}|${String(n.type ?? '')}|${Math.round(n.position.x)},${Math.round(n.position.y)}|${kind}|t:${t.length}|i:${imgLen}|o:${outLen}`;
       })
       .join(";");
     const edgeSig = edges.map((e) => `${e.id}|${e.source}>${e.target}|${e.sourceHandle ?? ''}|${e.targetHandle ?? ''}`).join(";");
@@ -81,6 +82,15 @@ export function useEditorDocument(id: string) {
   }, [doc, save]);
 
   const handleCanvasChange = useCallback((nodes: FlowNode[], edges: FlowEdge[]) => {
+    // Early return if no document
+    if (!doc) return;
+    
+    const newSig = makeSig(nodes, edges);
+    if (lastSigRef.current === newSig) {
+      return;
+    }
+    lastSigRef.current = newSig;
+    
     const toSchemaNode = (n: FlowNode): SchemaRFNode => {
       const data = n.data as NodeData | undefined;
       const inferredType = (typeof n.type === "string" && n.type) ? n.type : (data?.kind ?? "");
@@ -98,16 +108,17 @@ export function useEditorDocument(id: string) {
       sourceHandle: e.sourceHandle ?? undefined,
       targetHandle: e.targetHandle ?? undefined,
     });
+    
     const newNodes = nodes.map(toSchemaNode);
     const newEdges = edges.map(toSchemaEdge);
-    const newSig = makeSig(nodes, edges);
-    if (lastSigRef.current === newSig) {
-      return;
-    }
-    lastSigRef.current = newSig;
-    setDoc((prev) => (prev ? { ...prev, nodes: newNodes, edges: newEdges } : prev));
+    
+    // Use functional update to avoid stale closure issues
+    setDoc((prev) => {
+      if (!prev) return prev;
+      return { ...prev, nodes: newNodes, edges: newEdges };
+    });
     setDirty(true);
-  }, [makeSig]);
+  }, [makeSig, doc]);
 
   const addNode = useCallback((type: NodeTypeKey, position?: { x: number; y: number }) => {
     if (!doc) return;

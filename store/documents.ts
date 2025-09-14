@@ -1,17 +1,14 @@
 "use client";
 
-import { create } from "zustand";
-import { nanoid } from "nanoid";
-import type { DocumentT } from "@/lib/schemas";
-import { ZDocument } from "@/lib/schemas";
+import { nanoid } from 'nanoid'
+import { create } from 'zustand'
+import { ZDocument } from '@/lib/schemas'
 import {
-  deleteDocument as idbDeleteDocument,
-  getDocument as idbGetDocument,
-  listDocuments as idbListDocuments,
-  putDocument as idbPutDocument,
-  type DocumentMeta,
-} from "@/lib/storage";
+    deleteDocument as idbDeleteDocument, DocumentMeta, getDocument as idbGetDocument,
+    listDocuments as idbListDocuments, putDocument as idbPutDocument
+} from '@/lib/storage'
 
+import type { DocumentT } from "@/lib/schemas";
 type DocumentsState = {
   docs: DocumentMeta[];
   loading: boolean;
@@ -23,7 +20,7 @@ type DocumentsState = {
   save: (doc: DocumentT) => Promise<void>;
 };
 
-export const useDocumentsStore = create<DocumentsState>((set, get) => ({
+export const useDocumentsStore = create<DocumentsState>((set) => ({
   docs: [],
   loading: false,
   refresh: async () => {

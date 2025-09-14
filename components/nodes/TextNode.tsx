@@ -1,43 +1,98 @@
 "use client"
 
 import { Trash } from 'lucide-react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import {
     BaseNode, BaseNodeContent, BaseNodeHeader, BaseNodeHeaderTitle
 } from '@/components/base-node'
 import { LabeledHandle } from '@/components/labeled-handle'
 import { makeHandleId } from '@/lib/ports'
-import { type NodeProps, Position, useNodeId, useReactFlow, type Node as RFNode } from '@xyflow/react'
-import type { TextNodeData } from '@/lib/schemas'
+import { Node as RFNode, NodeProps, Position, useNodeId, useReactFlow } from '@xyflow/react'
 import { Button } from '../ui/button'
-import { memo, useEffect, useState, startTransition } from 'react'
 
+import type { TextNodeData } from '@/lib/schemas'
 function TextNodeImpl({ data }: NodeProps<RFNode<TextNodeData>>) {
   const nodeId = useNodeId()
   const { setNodes } = useReactFlow()
   const [value, setValue] = useState<string>(data?.text ?? '')
   const [isFocused, setIsFocused] = useState(false)
+  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // keep local state in sync if external data changes (e.g., load, undo)
+  // Keep local state in sync if external data changes (e.g., load, undo)
   // but never overwrite while the user is actively typing in this field
   useEffect(() => {
     if (isFocused) return
     const external = data?.text ?? ''
-    if (external !== value) setValue(external)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.text, isFocused])
+    if (external !== value) {
+      setValue(external)
+    }
+  }, [data?.text, isFocused, value])
 
-  const flushToStore = (next: string) => {
+  const flushToStore = useCallback((next: string) => {
     if (!nodeId) return
-    startTransition(() => {
+    
+    // Clear any pending flush
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current)
+    }
+    
+    // Use requestAnimationFrame to ensure DOM updates are complete
+    requestAnimationFrame(() => {
       setNodes((nodes) =>
         nodes.map((n) =>
           n.id === nodeId ? { ...n, data: { ...n.data, text: next } } : n
         )
       )
     })
-  }
+  }, [nodeId, setNodes])
 
-  // Intentionally do not persist while typing; only on explicit events (blur/save)
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.target.value
+    setValue(next)
+    
+    // Clear any pending flush
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current)
+    }
+    
+    // Debounce the flush to store
+    flushTimeoutRef.current = setTimeout(() => {
+      flushToStore(next)
+    }, 300)
+  }, [flushToStore])
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true)
+  }, [])
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false)
+    // Clear any pending flush and flush immediately
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current)
+    }
+    flushToStore(value)
+  }, [value, flushToStore])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault()
+      // Clear any pending flush and flush immediately
+      if (flushTimeoutRef.current) {
+        clearTimeout(flushTimeoutRef.current)
+      }
+      flushToStore(value)
+    }
+  }, [value, flushToStore])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (flushTimeoutRef.current) {
+        clearTimeout(flushTimeoutRef.current)
+      }
+    }
+  }, [])
 
   return (
     <BaseNode className='w-72'>
@@ -79,23 +134,10 @@ function TextNodeImpl({ data }: NodeProps<RFNode<TextNodeData>>) {
           spellCheck={false}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
-          onChange={(e) => {
-            const next = e.target.value
-            setValue(next)
-            // no-op: do not write to store while typing
-          }}
-          onInput={(e) => {
-            const next = (e.target as HTMLTextAreaElement).value
-            if (next !== value) setValue(next)
-          }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => { flushToStore(value); setIsFocused(false) }}
-          onKeyDown={(e) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-              e.preventDefault()
-              flushToStore(value)
-            }
-          }}
+          onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
         />
       </BaseNodeContent>
     </BaseNode>

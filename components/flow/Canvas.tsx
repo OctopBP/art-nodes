@@ -1,28 +1,16 @@
 "use client";
 
-import "@xyflow/react/dist/style.css";
+import { memo, useCallback, useEffect, useRef } from 'react'
+import { AddNodeToolbar } from '@/components/flow/AddNodeToolbar'
+import RemovableEdge from '@/components/flow/RemovableEdge'
 import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-  addEdge,
-  applyNodeChanges,
-  applyEdgeChanges,
-  type Connection,
-  type Edge,
-  type Node,
-  type NodeChange,
-  type EdgeChange,
-} from "@xyflow/react";
-import { useReactFlow } from "@xyflow/react";
-import { BackgroundVariant } from "@xyflow/react";
+    addEdge, applyEdgeChanges, applyNodeChanges, Background, BackgroundVariant, Connection,
+    Controls, Edge, EdgeChange, MiniMap, Node, NodeChange, ReactFlow, useEdgesState, useNodesState,
+    useReactFlow
+} from '@xyflow/react'
+import '@xyflow/react/dist/style.css'
+
 import type { ReactFlowProps } from "@xyflow/react";
-import { useCallback, useEffect, useRef } from "react";
-import RemovableEdge from "@/components/flow/RemovableEdge";
-import { AddNodeToolbar } from "@/components/flow/AddNodeToolbar";
 import type { NodeTypeKey } from "@/components/flow/nodeRegistry";
 
 type CanvasProps = {
@@ -35,51 +23,57 @@ type CanvasProps = {
   onAddNode?: (type: NodeTypeKey, position?: { x: number; y: number }) => void;
 };
 
-export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection, edgeTypes, onAddNode }: CanvasProps) {
+function CanvasImpl({ nodes = [], edges = [], onChange, nodeTypes, isValidConnection, edgeTypes, onAddNode }: CanvasProps) {
   const [rfNodes, setRfNodes] = useNodesState(nodes);
   const [rfEdges, setRfEdges] = useEdgesState(edges);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Keep latest refs to avoid stale closures
   const onChangeRef = useRef(onChange);
-  const nodesRef = useRef<Node[]>(rfNodes);
-  const edgesRef = useRef<Edge[]>(rfEdges);
   const shouldEmitRef = useRef(false);
   const isDraggingRef = useRef(false);
+  const lastEmitRef = useRef<{ nodes: Node[]; edges: Edge[] } | null>(null);
 
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  useEffect(() => {
-    nodesRef.current = rfNodes;
-  }, [rfNodes]);
-
-  useEffect(() => {
-    edgesRef.current = rfEdges;
-  }, [rfEdges]);
-
   // Sync external props into internal state when they change
+  // Use shallow comparison to avoid unnecessary updates
   useEffect(() => {
-    setRfNodes(nodes);
-  }, [nodes, setRfNodes]);
+    const nodesChanged = JSON.stringify(nodes) !== JSON.stringify(rfNodes);
+    if (nodesChanged) {
+      setRfNodes(nodes);
+    }
+  }, [nodes, rfNodes, setRfNodes]);
+
   useEffect(() => {
-    setRfEdges(edges);
-  }, [edges, setRfEdges]);
+    const edgesChanged = JSON.stringify(edges) !== JSON.stringify(rfEdges);
+    if (edgesChanged) {
+      setRfEdges(edges);
+    }
+  }, [edges, rfEdges, setRfEdges]);
 
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setRfNodes((prev) => {
       const next = applyNodeChanges(changes, prev);
-      // Only emit meaningful structural changes. Ignore dimension/selection churn and
-      // skip mid-drag position updates.
-      const hasMeaningfulChange = changes.some((c) =>
+      
+      // Only emit meaningful structural changes
+      const hasStructuralChange = changes.some((c) =>
         c.type === 'add' ||
         c.type === 'remove' ||
-        c.type === 'replace' ||
-        c.type === 'position'
+        c.type === 'replace'
       );
+      
       const hasPositionChange = changes.some((c) => c.type === 'position');
-      shouldEmitRef.current = hasMeaningfulChange && (!isDraggingRef.current || !hasPositionChange);
+      
+      // Emit immediately for structural changes, defer position changes until drag stops
+      if (hasStructuralChange) {
+        shouldEmitRef.current = true;
+      } else if (hasPositionChange && !isDraggingRef.current) {
+        shouldEmitRef.current = true;
+      }
+      
       return next;
     });
   }, [setRfNodes]);
@@ -100,13 +94,33 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
     });
   }, [setRfEdges]);
 
-  // Emit external change only after internal state updates commit
+  // Emit changes with debouncing to avoid excessive updates
   useEffect(() => {
     if (shouldEmitRef.current) {
       shouldEmitRef.current = false;
-      onChangeRef.current?.(rfNodes, rfEdges);
+      
+      // Check if the data actually changed to avoid unnecessary emissions
+      const currentData = { nodes: rfNodes, edges: rfEdges };
+      const lastData = lastEmitRef.current;
+      
+      if (!lastData || 
+          JSON.stringify(currentData.nodes) !== JSON.stringify(lastData.nodes) ||
+          JSON.stringify(currentData.edges) !== JSON.stringify(lastData.edges)) {
+        lastEmitRef.current = currentData;
+        onChangeRef.current?.(rfNodes, rfEdges);
+      }
     }
   }, [rfNodes, rfEdges]);
+
+  const handleNodeDragStart = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
+
+  const handleNodeDragStop = useCallback(() => {
+    isDraggingRef.current = false;
+    // Emit a single sync after drag completes
+    shouldEmitRef.current = true;
+  }, []);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: "100%" }}>
@@ -116,12 +130,8 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onNodeDragStart={() => { isDraggingRef.current = true; }}
-        onNodeDragStop={() => {
-          isDraggingRef.current = false;
-          // Emit a single sync after drag completes
-          onChangeRef.current?.(nodesRef.current, edgesRef.current);
-        }}
+        onNodeDragStart={handleNodeDragStart}
+        onNodeDragStop={handleNodeDragStop}
         fitView
         nodeTypes={nodeTypes}
         isValidConnection={isValidConnection}
@@ -131,6 +141,10 @@ export default function Canvas({ nodes = [], edges = [], onChange, nodeTypes, is
           style: { stroke: "#94a3b8", strokeWidth: 1.5 },
         }}
         deleteKeyCode={["Delete", "Backspace"]}
+        nodesDraggable={true}
+        nodesConnectable={true}
+        elementsSelectable={true}
+        selectNodesOnDrag={false}
       >
         <AddAtCenterOverlay onAddNode={onAddNode} containerRef={containerRef} />
         <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
@@ -154,3 +168,17 @@ function AddAtCenterOverlay({ onAddNode, containerRef }: { onAddNode?: (type: No
   }, [onAddNode, rf, containerRef]);
   return <AddNodeToolbar onAdd={handleAddAtCenter} />;
 }
+
+// Memoize the Canvas component to prevent unnecessary re-renders
+const Canvas = memo(CanvasImpl, (prevProps, nextProps) => {
+  // Only re-render if nodes, edges, or callbacks actually changed
+  return (
+    JSON.stringify(prevProps.nodes) === JSON.stringify(nextProps.nodes) &&
+    JSON.stringify(prevProps.edges) === JSON.stringify(nextProps.edges) &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onAddNode === nextProps.onAddNode &&
+    prevProps.isValidConnection === nextProps.isValidConnection
+  );
+});
+
+export default Canvas;

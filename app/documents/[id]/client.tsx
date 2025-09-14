@@ -1,18 +1,18 @@
 "use client";
 
 import Link from 'next/link'
-import { useCallback } from 'react'
+import { memo, useCallback } from 'react'
 import Canvas from '@/components/flow/Canvas'
 import { nodeTypes } from '@/components/flow/nodeRegistry'
-import { isValidConnectionByHandles } from '@/lib/ports'
 import { createsCycle } from '@/lib/graph'
+import { isValidConnectionByHandles } from '@/lib/ports'
 import { useEditorDocument } from './useEditorDocument'
 
 import type { Edge as RFEdge, Node as RFNode, Connection, ReactFlowProps, IsValidConnection } from "@xyflow/react";
 import type { NodeData } from "@/lib/schemas";
 type FlowEdge = RFEdge;
 
-export default function EditorClient({ id }: { id: string }) {
+function EditorClientImpl({ id }: { id: string }) {
   const { doc, loading, error, dirty, saving, setTitle, handleCanvasChange, addNode, saveNow } = useEditorDocument(id);
 
   // Keep hooks before any conditional returns
@@ -98,3 +98,10 @@ export default function EditorClient({ id }: { id: string }) {
     </main>
   );
 }
+
+// Memoize the EditorClient to prevent unnecessary re-renders
+const EditorClient = memo(EditorClientImpl, (prevProps, nextProps) => {
+  return prevProps.id === nextProps.id;
+});
+
+export default EditorClient;
